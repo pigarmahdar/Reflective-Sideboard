@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-ink: #f8fafc; /* slate-50 */
+  --color-paper: #020617; /* slate-950 */
+  --color-muted: #64748b; /* slate-500 */
+  --color-line: #1e293b; /* slate-800 */
+  --color-accent: #4f46e5; /* indigo-600 */
+  --color-accent-hover: #6366f1; /* indigo-500 */
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    selection-background-color: var(--color-accent);
+    selection-color: white;
+  }
+
+  .journal-content {
+    @apply font-sans leading-relaxed text-base text-slate-300;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+  }
+}
+
+@layer components {
+  .btn-icon {
+    @apply p-2 rounded-lg hover:bg-slate-800 transition-all active:scale-95 text-muted hover:text-ink border border-transparent hover:border-line;
+  }
+
+  .card-mention {
+    @apply inline-block px-1 py-0.5 rounded-sm border-b border-indigo-400/30 text-indigo-400 font-bold cursor-help hover:bg-indigo-400/10 transition-colors;
+  }
+}
