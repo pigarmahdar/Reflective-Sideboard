@@ -7,6 +7,8 @@ I built **Reflective Sideboard** because I wanted a space that felt different fr
 
 This is a personal, private archive. Nothing is saved anywhere but your own browser’s cache—it is meant to be a safe, quiet space for documentation, not publication.
 
+You can view the platform here: https://reflective-sideboard-1012791969845.asia-southeast1.run.app/
+
 ---
 
 ## The Core: A Journal for the Unscripted Brew
