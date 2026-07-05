@@ -70,18 +70,18 @@ This indexes fields with optimal distance weights, enabling misspelling toleranc
 A custom event listener intercepts target keystrokes to facilitate an entirely mouse-free writing environment.
 
 *   **Global Layout Shortcuts**:
-    *   `Cmd/Ctrl + N`: Instant entry instantiation.
+    *   `Cmd/Ctrl + N`: Instant entry initiation.
     *   `Cmd/Ctrl + P`: Real-time rendering toggles (Write vs. Preview layout views).
     *   `Cmd/Ctrl + /`: Launches/dismisses the Keyboard Shortcuts Guide overlay.
 *   **Text Selection Wrapping Engine**:
-    Keystrokes in the textarea (`Cmd/Ctrl + B` for Bold, `Cmd/Ctrl + I` for Italic, `Cmd/Ctrl + E` for Inline Code, `Cmd/Ctrl + G` for Card bracket formatting, and `Cmd/Ctrl + K` for Link insertions) are handled by a cursor position offset tracker:
+    Keystrokes in the text area (`Cmd/Ctrl + B` for Bold, `Cmd/Ctrl + I` for Italic, `Cmd/Ctrl + E` for Inline Code, `Cmd/Ctrl + G` for Card bracket formatting, and `Cmd/Ctrl + K` for Link insertions) are handled by a cursor position offset tracker.
 
 ### 4. Predictive Scryfall Autocomplete (O(1) Typing Flow)
-To prevent API rate-limiting and maximize keyboard efficiency:
+To prevent API rate-limiting and maximise keyboard efficiency:
 *   **Token Triggers**: The editor monitors input on every keystroke. Typing `[[` or `@` sets an autocomplete trigger.
 *   **Debounced Lookups**: As the user continues typing, queries are debounced and routed to Scryfall's autocomplete API:
     `GET https://api.scryfall.com/cards/autocomplete?q={query}`
-*   **Interactive Suggestion Portal**: The UI suspends normal textarea key handlers. Custom handlers intercept `ArrowDown`, `ArrowUp`, `Enter`, and `Escape` to traverse the dynamic suggestion popup list.
+*   **Interactive Suggestion Portal**: The UI suspends normal text area key handlers. Custom handlers intercept `ArrowDown`, `ArrowUp`, `Enter`, and `Escape` to traverse the dynamic suggestion popup list.
 *   **Syntax Insertion**: Selecting a card inserts `[[Card Name]]` at the cursor position and restores focus instantly to the editor.
 
 ### 5. New Entry Stimulus Engine (Smart Empty States)
