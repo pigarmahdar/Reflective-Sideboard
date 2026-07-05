@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { JournalEditor } from './components/JournalEditor';
 import { JournalEntry } from './types';
@@ -26,8 +26,18 @@ export default function App() {
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   // Close sidebar on mobile when selecting an entry
   const handleSelectEntry = (id: string) => {
@@ -45,11 +55,10 @@ export default function App() {
       tags: [],
       lastModified: new Date().toISOString()
     };
-    setEntries([newEntry, ...entries]);
+    setEntries(prev => [newEntry, ...prev]);
     setSelectedId(newEntry.id);
     setIsSidebarOpen(false);
   };
-
 
   const handleUpdateEntry = (updates: Partial<JournalEntry>) => {
     if (!selectedId) return;
@@ -60,9 +69,36 @@ export default function App() {
     ));
   };
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Cmd+N / Ctrl+N for New Entry
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        handleCreateEntry();
+      }
+      // Cmd+S / Ctrl+S for Save (prevent browser dialog, trigger visual save)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        setIsSaving(true);
+        setTimeout(() => setIsSaving(false), 800);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   // Persistence
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setIsSaving(true);
+    const timer = setTimeout(() => {
+      setIsSaving(false);
+    }, 800);
+    return () => clearTimeout(timer);
   }, [entries]);
 
   // Derived state: All unique tags from all entries
@@ -84,16 +120,16 @@ export default function App() {
       );
     }
 
-    if (searchQuery.trim()) {
+    if (debouncedSearchQuery.trim()) {
       const fuse = new Fuse(result, {
         keys: ['title', 'content', 'tags'],
         threshold: 0.3
       });
-      result = fuse.search(searchQuery).map(r => r.item);
+      result = fuse.search(debouncedSearchQuery).map(r => r.item);
     }
 
     return result;
-  }, [entries, searchQuery, selectedTags]);
+  }, [entries, debouncedSearchQuery, selectedTags]);
 
   const selectedEntry = useMemo(() => 
     entries.find(e => e.id === selectedId) || null,
@@ -144,6 +180,7 @@ export default function App() {
                 onChange={handleUpdateEntry}
                 onDelete={handleDeleteEntry}
                 onOpenSidebar={() => setIsSidebarOpen(true)}
+                isSaving={isSaving}
               />
             </motion.div>
           ) : (
