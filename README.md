@@ -1,6 +1,7 @@
-# Reflective Sideboard: A Primer
+# Reflective Sideboard
+> A private, distraction-free journal for documenting your Magic: The Gathering journey. No tracking, no stats—just space to reflect on the cards, the brews, and the pods.
 
-I’m Pigar. My days are usually spent in student support, but my evenings—and the small, quiet spaces in between—are often spent with Magic: The Gathering. 
+My days are usually spent in student support, but my evenings—and the small, quiet spaces in between—are often spent with Magic: The Gathering. 
 
 I built **Reflective Sideboard** because I wanted a space that felt different from the usual MTG tools. So much of the community focuses on optimization: the most efficient decks, the fastest wins, the linear path to victory. I found myself wanting something else. I wanted a way to document my journey through the game, especially those weekly commander pods at my LGS. I wanted a place to sit with the cards I brewed, to track the interactions I discovered, and most importantly, to reflect on how I played and how I behaved in the pod.
 
@@ -46,5 +47,7 @@ I know this kind of documentation isn't for everyone. If you’re only intereste
 ## A Note on the Build
 
 I didn’t build this to prove anything about software; I built it because I wanted to see if I could use Google AI Studio to turn an idea into something tangible. It’s brief, it’s sweet, and it’s good enough that I’m proud to use it. It’s my exploration into using AI as a tool for personal clarity, and I hope it offers you a little bit of that same space.
+
+*Technical Note: This was built through iterative prompting with Google AI Studio, leveraging modern web standards to keep your data local to your browser cache. It is a testament to the power of conversational AI as a tool for personal clarity.*
 
 *Reflective Sideboard is still evolving. If you find a bug, or if a prompt feels too loud, let me know. I’m still listening.*
