@@ -1,4 +1,5 @@
 # Reflective Sideboard 🔮
+<img width="1654" height="802" alt="Screenshot 2026-07-05 at 10 38 27 PM" src="https://github.com/user-attachments/assets/267bc6bf-1e6e-4616-9fbe-7d17a87c91c4" />
 > A private, distraction-free journal for documenting your Magic: The Gathering journey. No tracking, no stats—just space to reflect on the cards, the brews, and the pods.
 
 I built **Reflective Sideboard** because I wanted a space that felt different from the usual MTG tools. So much of the community focuses on optimization: the most efficient decks, the fastest wins, the linear path to victory. I found myself wanting something else. I wanted a way to document my journey through the game, especially those weekly commander pods at my LGS. I wanted a place to sit with the cards I brewed, to track the interactions I discovered, and most importantly, to reflect on how I played and how I behaved in the pod.
