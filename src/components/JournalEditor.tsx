@@ -71,17 +71,25 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [interacted, setInteracted] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const contentRef = useRef(entry.content);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const autocompleteTimeoutRef = useRef<number | null>(null);
+
+  // Sync ref so event handlers always read the latest content without re-triggering effects
+  useEffect(() => {
+    contentRef.current = entry.content;
+  }, [entry.content]);
 
   // Reset interacted state when switching entries
   useEffect(() => {
     setInteracted(false);
   }, [entry.id]);
 
-  // Select 5-6 random prompts
+  // Select 5-6 random prompts — stored in a ref to prevent mid-session reshuffle
   const activePrompts = React.useMemo(() => {
     const shuffled = [...ALL_PROMPTS].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 6);
-  }, [entry.id]);
+  }, []);
 
   const shouldShowPrompts = !interacted && !entry.title.trim() && !entry.content.trim() && view === 'edit';
 
@@ -96,13 +104,44 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
     }, 0);
   };
 
-  // Scryfall Autocomplete logic
+  /**
+   * Core autocomplete trigger — debounced + abort-safe.
+   * Called from the stable event handler below.
+   */
+  const triggerAutocomplete = (query: string) => {
+    // Cancel any pending debounce timer
+    if (autocompleteTimeoutRef.current !== null) {
+      clearTimeout(autocompleteTimeoutRef.current);
+    }
+
+    // Abort any in-flight request so stale responses don't overwrite newer ones
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Debounce the API call by 200ms
+    autocompleteTimeoutRef.current = window.setTimeout(async () => {
+      try {
+        const results = await ScryfallService.autocomplete(query, { signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setSuggestions(results);
+          setShowSuggestions(true);
+        }
+      } catch {
+        // Fetch failed (not an abort) — suggestions stay as-is
+      }
+    }, 200);
+  };
+
+  // Stable effect — runs once on mount, listeners persist across all renders
   useEffect(() => {
     const textarea = editorRef.current;
     if (!textarea) return;
 
     const handleSelectionAndInput = () => {
-      const text = entry.content;
+      const text = contentRef.current; // ← reads live ref, not a stale closure
       const cursorPos = textarea.selectionStart || text.length;
       const textBeforeCursor = text.slice(0, cursorPos);
 
@@ -113,38 +152,50 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
       if (braceMatch) {
         const query = braceMatch[1];
         if (query.length >= 2) {
-          ScryfallService.autocomplete(query).then(setSuggestions);
-          setShowSuggestions(true);
+          triggerAutocomplete(query);
         } else {
           setSuggestions([]);
           setShowSuggestions(false);
+          if (autocompleteTimeoutRef.current !== null) {
+            clearTimeout(autocompleteTimeoutRef.current);
+            autocompleteTimeoutRef.current = null;
+          }
         }
       } else if (atMatch) {
         const query = atMatch[1];
         if (query.length >= 2) {
-          ScryfallService.autocomplete(query).then(setSuggestions);
-          setShowSuggestions(true);
+          triggerAutocomplete(query);
         } else {
           setSuggestions([]);
           setShowSuggestions(false);
+          if (autocompleteTimeoutRef.current !== null) {
+            clearTimeout(autocompleteTimeoutRef.current);
+            autocompleteTimeoutRef.current = null;
+          }
         }
       } else {
         setShowSuggestions(false);
+        if (autocompleteTimeoutRef.current !== null) {
+          clearTimeout(autocompleteTimeoutRef.current);
+          autocompleteTimeoutRef.current = null;
+        }
       }
     };
 
-    // Run on content load / content change
-    handleSelectionAndInput();
-
-    // Attach keyboard and click listener to reactive capture caret/cursor changes
     textarea.addEventListener('keyup', handleSelectionAndInput);
     textarea.addEventListener('click', handleSelectionAndInput);
 
     return () => {
       textarea.removeEventListener('keyup', handleSelectionAndInput);
       textarea.removeEventListener('click', handleSelectionAndInput);
+      if (autocompleteTimeoutRef.current !== null) {
+        clearTimeout(autocompleteTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, [entry.content]);
+  }, []); // ← stable dependency array: runs exactly once
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
