@@ -622,22 +622,9 @@ Press [[ or @ to trigger card name suggestions instantly!"
         <AnimatePresence initial={false}>
           {(view === 'preview' || (view === 'edit' && showSuggestions && suggestions.length > 0)) && (
             <>
-              {/* Mobile overlay for sidebar */}
-              <div
-                className="fixed inset-0 bg-black/60 z-20 md:hidden"
-                style={{ display: (view === 'preview' && hoveredCardName) || (view === 'edit' && showSuggestions && suggestions.length > 0) ? 'block' : 'none' }}
-                onClick={() => {
-                  if (view === 'edit') {
-                    setShowSuggestions(false);
-                    setSuggestionCursor(-1);
-                  } else {
-                    setHoveredCardName(null);
-                  }
-                }}
-              />
               <div
                 className={cn(
-                  "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-surface/90 md:bg-surface/30 border-t md:border-t-0 md:border-l border-line z-30",
+                  "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-surface border-t md:border-t-0 md:border-l border-line z-30",
                   "fixed md:static bottom-0 left-0 right-0 h-[60vh] md:h-auto rounded-t-2xl md:rounded-none"
                 )}
                 style={{
