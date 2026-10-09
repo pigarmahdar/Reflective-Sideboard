@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 # GITHUB_TOKEN needs write access to publish Pages; id-token: write is what
-# actions/configure-pages uses to register the site on its first run.
+# actions/configure-pages uses to create and authenticate the Pages site.
 permissions:
   contents: read
   pages: write
@@ -40,7 +40,12 @@ jobs:
           PAGES_BASE: /${{ github.event.repository.name }}/
         run: npm run build
 
+      # enablement: true lets this action CREATE the Pages site on repos where
+      # Pages is not yet enabled. Without it the action only reads an existing
+      # site and fails with "Get Pages site failed ... Not Found".
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
