@@ -623,10 +623,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
           {(view === 'preview' || (view === 'edit' && showSuggestions && suggestions.length > 0)) && (
             <>
               {/* Mobile overlay for sidebar */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+              <div
                 className="fixed inset-0 bg-black/60 z-20 md:hidden"
                 style={{ display: (view === 'preview' && hoveredCardName) || (view === 'edit' && showSuggestions && suggestions.length > 0) ? 'block' : 'none' }}
                 onClick={() => {
@@ -638,20 +635,13 @@ Press [[ or @ to trigger card name suggestions instantly!"
                   }
                 }}
               />
-              <motion.div
-                initial={{ width: 0, opacity: 0, y: 50 }}
-                animate={{ 
-                  width: window.innerWidth < 768 ? '100%' : 384, 
-                  opacity: 1,
-                  y: 0 
-                }}
-                exit={{ width: 0, opacity: 0, y: 50 }}
-                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              <div
                 className={cn(
                   "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-surface/90 md:bg-surface/30 border-t md:border-t-0 md:border-l border-line z-30",
                   "fixed md:static bottom-0 left-0 right-0 h-[60vh] md:h-auto rounded-t-2xl md:rounded-none"
                 )}
                 style={{
+                  width: window.innerWidth < 768 ? '100%' : 384,
                   display: window.innerWidth < 768 && (view === 'preview' ? !hoveredCardName : !(showSuggestions && suggestions.length > 0)) ? 'none' : 'block'
                 }}
               >
@@ -697,7 +687,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
                      <X className="w-4 h-4" />
                    </button>
                 </div>
-              </motion.div>
+              </div>
             </>
           )}
         </AnimatePresence>
