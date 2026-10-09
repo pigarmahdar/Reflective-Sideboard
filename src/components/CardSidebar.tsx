@@ -47,13 +47,13 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
 
   return (
     <aside className="w-full h-full flex flex-col shrink-0 overflow-hidden">
-      <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+      <div className="p-4 border-b border-line bg-surface/50">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Card Preview</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-faint">Card Preview</h3>
           {card && (
             <button 
               onClick={handleCopy}
-              className="text-slate-500 hover:text-indigo-400 transition-colors"
+              className="text-muted hover:text-indigo-400 transition-colors"
               title="Copy card text"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -79,9 +79,9 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center p-8 text-center text-slate-500 mt-20"
+              className="flex flex-col items-center justify-center p-8 text-center text-muted mt-20"
             >
-              <div className="w-16 h-16 bg-slate-800/50 rounded-xl flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-surface-raised/50 rounded-xl flex items-center justify-center mb-4">
                 <ImageIcon className="w-8 h-8 opacity-40" />
               </div>
               <p className="text-xs font-medium leading-relaxed">Hover over a card mention in preview to view it here.</p>
@@ -95,7 +95,7 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
                className="flex justify-center flex-col items-center h-48 mt-20"
              >
                <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-4" />
-               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Locating...</span>
+               <span className="text-xs font-medium text-muted uppercase tracking-wider">Locating...</span>
              </motion.div>
           ) : card ? (
              <motion.div 
@@ -111,23 +111,23 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
                     expanded ? "w-1/3 opacity-40 mb-2 scale-95" : "w-3/4 scale-100"
                   )} />
                 ) : (
-                  <div className="w-3/4 aspect-[2.5/3.5] mx-auto bg-slate-800 rounded-xl flex items-center justify-center mb-6 border border-slate-700">
-                    <span className="text-slate-500 text-xs text-center px-4">No image available</span>
+                  <div className="w-3/4 aspect-[2.5/3.5] mx-auto bg-surface-raised rounded-xl flex items-center justify-center mb-6 border border-line-strong">
+                    <span className="text-muted text-xs text-center px-4">No image available</span>
                   </div>
                 )}
                 
                 <div className="flex flex-col flex-1 space-y-4">
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h4 className="font-bold text-lg leading-tight text-white">{card.name}</h4>
-                      <span className="text-sm font-mono text-slate-400 whitespace-nowrap">{card.mana_cost}</span>
+                      <h4 className="font-bold text-lg leading-tight text-ink">{card.name}</h4>
+                      <span className="text-sm font-mono text-faint whitespace-nowrap">{card.mana_cost}</span>
                     </div>
-                    <p className="text-xs text-slate-400 font-medium pb-4 border-b border-slate-800">{card.type_line}</p>
+                    <p className="text-xs text-faint font-medium pb-4 border-b border-line">{card.type_line}</p>
                   </div>
                   
                   <div className="relative flex flex-col pt-1">
                     <div className={cn(
-                      "text-[13px] leading-relaxed text-slate-300 whitespace-pre-wrap transition-all",
+                      "text-[13px] leading-relaxed text-body whitespace-pre-wrap transition-all",
                       !expanded && "line-clamp-4"
                     )}>
                       {card.oracle_text}

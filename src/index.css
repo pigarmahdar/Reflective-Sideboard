@@ -7,16 +7,43 @@
   --font-serif: "Playfair Display", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-ink: #f8fafc; /* slate-50 */
-  --color-paper: #020617; /* slate-950 */
-  --color-muted: #64748b; /* slate-500 */
-  --color-line: #1e293b; /* slate-800 */
-  --color-accent: #4f46e5; /* indigo-600 */
+  /* Semantic tokens — light is the base declaration, dark overrides below.
+     Dark values reproduce the pre-theme palette exactly (slate-50/950/500/800). */
+  --color-paper: #ffffff;        /* page ground */
+  --color-surface: #f1f5f9;      /* cards, wells (slate-100) */
+  --color-surface-raised: #e2e8f0; /* hover/inset surfaces (slate-200) */
+  --color-surface-overlay: #cbd5e1; /* one step above raised: close-button hovers (slate-300) */
+  --color-ink: #0f172a;          /* primary text (slate-900) */
+  --color-body: #334155;         /* body copy (slate-700) */
+  --color-muted: #64748b;        /* secondary text (slate-500) */
+  --color-faint: #94a3b8;        /* tertiary text (slate-400) */
+  --color-line: #cbd5e1;         /* hairlines (slate-300) */
+  --color-line-strong: #94a3b8;  /* emphasis borders (slate-400) */
+  --color-accent: #4f46e5;       /* indigo-600 */
   --color-accent-hover: #6366f1; /* indigo-500 */
+  --color-accent-soft: #eef2ff;  /* indigo-50 tinted fills */
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
 }
+
+:root[data-theme='dark'] {
+  --color-paper: #020617;        /* slate-950 */
+  --color-surface: #0f172a;      /* slate-900 */
+  --color-surface-raised: #1e293b;/* slate-800 */
+  --color-surface-overlay: #334155; /* slate-700 */
+  --color-ink: #f8fafc;          /* slate-50 */
+  --color-body: #cbd5e1;         /* slate-300 */
+  --color-muted: #64748b;        /* slate-500 */
+  --color-faint: #94a3b8;        /* slate-400 */
+  --color-line: #1e293b;         /* slate-800 */
+  --color-line-strong: #334155;  /* slate-700 */
+  --color-accent-soft: #1e1b4b;  /* indigo-950 tinted fills */
+}
+
+/* Native UI (scrollbars, form controls, selection) follows the theme */
+:root { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
 
 @layer base {
   body {
@@ -26,7 +53,29 @@
   }
 
   .journal-content {
-    @apply font-sans leading-relaxed text-base text-slate-300;
+    @apply font-sans leading-relaxed text-base text-body;
+  }
+
+  /* Typography plugin: invert prose to light-on-dark only in dark theme.
+     Replaces the unconditional `prose-invert` class so markdown previews
+     stay readable on the light ground. */
+  :root[data-theme='dark'] .prose {
+    --tw-prose-body: var(--color-body);
+    --tw-prose-headings: var(--color-ink);
+    --tw-prose-lead: var(--color-faint);
+    --tw-prose-links: var(--color-accent-hover);
+    --tw-prose-bold: var(--color-ink);
+    --tw-prose-counters: var(--color-muted);
+    --tw-prose-bullets: var(--color-line-strong);
+    --tw-prose-hr: var(--color-line);
+    --tw-prose-quotes: var(--color-body);
+    --tw-prose-quote-borders: var(--color-line);
+    --tw-prose-captions: var(--color-muted);
+    --tw-prose-code: var(--color-ink);
+    --tw-prose-pre-code: var(--color-body);
+    --tw-prose-pre-bg: var(--color-surface);
+    --tw-prose-th-borders: var(--color-line-strong);
+    --tw-prose-td-borders: var(--color-line);
   }
 
   /* Custom Scrollbar */
@@ -37,13 +86,25 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+    @apply bg-line rounded-full transition-colors;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-overlay;
+  }
+
+  /* Respect reduced-motion for the ambient animations used in-app */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
   .btn-icon {
-    @apply p-2 rounded-lg hover:bg-slate-800 transition-all active:scale-95 text-muted hover:text-ink border border-transparent hover:border-line;
+    @apply p-2 rounded-lg hover:bg-surface-raised transition-all active:scale-95 text-muted hover:text-ink border border-transparent hover:border-line;
   }
 
   .card-mention {

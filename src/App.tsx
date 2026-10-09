@@ -16,10 +16,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, BookOpen, Menu } from 'lucide-react';
 import { cn } from './lib/utils';
 import Fuse from 'fuse.js';
+import { saveAs } from 'file-saver';
+import { useTheme } from './hooks/useTheme';
 
 const STORAGE_KEY = 'spellbook_journal_entries';
+const BACKUP_SCHEMA_VERSION = 1;
 
 export default function App() {
+  const { theme, setTheme } = useTheme();
   const [entries, setEntries] = useState<JournalEntry[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
@@ -149,6 +153,67 @@ export default function App() {
     );
   };
 
+  /** Export the full archive as a JSON file. Uses `entries`, not the filtered list. */
+  const handleBackup = () => {
+    const payload = {
+      schemaVersion: BACKUP_SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      app: 'reflective-sideboard',
+      entries,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const stamp = new Date().toISOString().slice(0, 10);
+    saveAs(blob, `sideboard-backup-${stamp}.json`);
+  };
+
+  /**
+   * Replace the archive from a previously exported backup.
+   * Validates shape before touching state so a bad file cannot wipe good data.
+   */
+  const handleRestore = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        const candidate = Array.isArray(parsed) ? parsed : parsed?.entries;
+        if (!Array.isArray(candidate)) {
+          alert('That file does not look like a Reflective Sideboard backup.');
+          return;
+        }
+        // Minimal per-record check: title/content/date are what the UI relies on.
+        const normalised: JournalEntry[] = candidate
+          .filter(e => e && typeof e === 'object' && typeof e.content === 'string')
+          .map(e => ({
+            id: typeof e.id === 'string' && e.id ? e.id : crypto.randomUUID(),
+            title: typeof e.title === 'string' ? e.title : '',
+            content: e.content,
+            date: typeof e.date === 'string' ? e.date : new Date().toISOString(),
+            lastModified: typeof e.lastModified === 'string' ? e.lastModified : new Date().toISOString(),
+            tags: Array.isArray(e.tags) ? e.tags.filter((t: unknown) => typeof t === 'string') : [],
+          }));
+
+        if (normalised.length === 0) {
+          alert('No usable entries found in that backup.');
+          return;
+        }
+        const ok = confirm(
+          `Restore ${normalised.length} ${normalised.length === 1 ? 'entry' : 'entries'}? ` +
+          `This replaces your current ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} and cannot be undone.`
+        );
+        if (!ok) return;
+
+        setEntries(normalised);
+        setSelectedId(null);
+        setSearchQuery('');
+        setSelectedTags([]);
+      } catch {
+        alert('Could not read that file as JSON.');
+      }
+    };
+    reader.onerror = () => alert('Could not read that file.');
+    reader.readAsText(file);
+  };
+
   return (
     <div className="flex bg-paper min-h-screen overflow-hidden selection:bg-accent/20">
       <Sidebar 
@@ -163,6 +228,10 @@ export default function App() {
         onToggleTag={toggleTag}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        theme={theme}
+        onThemeChange={setTheme}
+        onBackup={handleBackup}
+        onRestore={handleRestore}
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -189,19 +258,19 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-slate-950 relative"
+              className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-paper relative"
             >
               <div className="absolute top-6 left-6 md:hidden">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 border border-slate-800 bg-slate-900 rounded-lg text-slate-400 hover:text-white"
+                  className="p-2 border border-line bg-surface rounded-lg text-faint hover:text-ink"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
               </div>
               <div className="relative mb-8">
                  <div className="absolute inset-0 bg-indigo-500/10 blur-3xl rounded-full scale-150 animate-pulse"></div>
-                 <div className="relative w-20 h-20 bg-slate-900 rounded-2xl shadow-2xl flex items-center justify-center border border-slate-800">
+                 <div className="relative w-20 h-20 bg-surface rounded-2xl shadow-2xl flex items-center justify-center border border-line">
                     <BookOpen className="w-10 h-10 text-indigo-500" />
                  </div>
                  <motion.div 
@@ -212,8 +281,8 @@ export default function App() {
                     <Sparkles className="w-4 h-4" />
                  </motion.div>
               </div>
-              <h2 className="text-3xl font-bold font-sans text-white mb-3 tracking-tight">Reflective Sideboard</h2>
-              <p className="max-w-xs text-slate-500 leading-relaxed text-sm font-medium">
+              <h2 className="text-3xl font-bold font-sans text-ink mb-3 tracking-tight">Reflective Sideboard</h2>
+              <p className="max-w-xs text-muted leading-relaxed text-sm font-medium">
                 Log your matches, theorycraft your next brew, and track your card interactions with Scryfall integration.
               </p>
               
@@ -229,7 +298,7 @@ export default function App() {
       </div>
 
       {/* Decorative Texture Overlays */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.02] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
+      <div className="fixed inset-0 pointer-events-none hidden [&:where(:root[data-theme=dark]_*)]:block opacity-[0.02] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
     </div>
   );
 }

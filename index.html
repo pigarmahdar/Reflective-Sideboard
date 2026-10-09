@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reflective Sideboard</title>
+    <script>
+      // Set the theme before first paint to avoid a light/dark flash.
+      // Must mirror resolveInitialTheme() in src/hooks/useTheme.ts.
+      (function () {
+        var forced = new URLSearchParams(location.search).get('theme');
+        var stored = null;
+        try { stored = localStorage.getItem('rs-theme'); } catch (e) {}
+        var dark;
+        if (forced === 'light' || forced === 'dark') {
+          dark = forced === 'dark';
+        } else if (stored === 'light' || stored === 'dark') {
+          dark = stored === 'dark';
+        } else {
+          dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

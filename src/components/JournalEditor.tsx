@@ -436,13 +436,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
   };
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 bg-slate-950 h-full relative">
+    <main className="flex-1 flex flex-col min-w-0 bg-paper h-full relative">
       {/* Header */}
-      <header className="h-16 border-b border-slate-800 flex items-center justify-between px-4 lg:px-8 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
+      <header className="h-16 border-b border-line flex items-center justify-between px-4 lg:px-8 bg-paper/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
         <div className="flex-1 flex items-center gap-3 lg:gap-6">
           <button 
             onClick={onOpenSidebar}
-            className="md:hidden p-2 text-slate-400 hover:text-white rounded-lg border border-slate-800 bg-slate-900"
+            className="md:hidden p-2 text-faint hover:text-ink rounded-lg border border-line bg-surface"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -452,7 +452,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
             onChange={(e) => onChange({ title: e.target.value })}
             onFocus={() => setInteracted(true)}
             placeholder="Entry Title..."
-            className="bg-transparent border-none focus:ring-0 text-xl lg:text-2xl font-bold text-white w-full placeholder:text-slate-700 font-serif"
+            className="bg-transparent border-none focus:ring-0 text-xl lg:text-2xl font-bold text-ink w-full placeholder:text-muted font-serif"
           />
           <div className="hidden lg:flex items-center gap-2 flex-wrap">
             {entry.tags.map(tag => (
@@ -469,19 +469,19 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="+ tag"
-                className="text-[10px] bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-slate-500 focus:outline-none focus:border-indigo-500 w-16 transition-all"
+                className="text-[10px] bg-surface border border-line rounded px-2 py-0.5 text-muted focus:outline-none focus:border-indigo-500 w-16 transition-all"
               />
             </form>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-slate-900/50 p-1 rounded-lg flex items-center mr-4 border border-slate-800 backdrop-blur-sm self-center">
+          <div className="bg-surface/50 p-1 rounded-lg flex items-center mr-4 border border-line backdrop-blur-sm self-center">
              <button 
                onClick={() => setView('edit')}
                className={cn(
                  "flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
-                 view === 'edit' ? "bg-indigo-600 shadow-sm text-white" : "text-slate-500 hover:text-slate-400"
+                 view === 'edit' ? "bg-indigo-600 shadow-sm text-ink" : "text-muted hover:text-faint"
                )}
              >
                <Edit3 className="w-3.5 h-3.5" /> Write
@@ -490,7 +490,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
                onClick={() => setView('preview')}
                className={cn(
                  "flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
-                 view === 'preview' ? "bg-indigo-600 shadow-sm text-white" : "text-slate-500 hover:text-slate-400"
+                 view === 'preview' ? "bg-indigo-600 shadow-sm text-ink" : "text-muted hover:text-faint"
                )}
              >
                <Eye className="w-3.5 h-3.5" /> Preview
@@ -530,7 +530,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
-                      className="border border-dashed border-slate-800 bg-slate-900/10 rounded-xl p-5 mb-6 relative select-none cursor-pointer hover:border-slate-700 transition-colors"
+                      className="border border-dashed border-line bg-surface/10 rounded-xl p-5 mb-6 relative select-none cursor-pointer hover:border-line-strong transition-colors"
                       onClick={() => {
                         setInteracted(true);
                         setTimeout(() => editorRef.current?.focus(), 0);
@@ -541,7 +541,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
                           e.stopPropagation();
                           setInteracted(true);
                         }}
-                        className="absolute top-4 right-4 p-1 text-slate-600 hover:text-slate-400 hover:bg-slate-800/40 rounded transition-all"
+                        className="absolute top-4 right-4 p-1 text-muted hover:text-faint hover:bg-surface-raised/40 rounded transition-all"
                         title="Dismiss prompts"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -560,7 +560,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
                               e.stopPropagation();
                               handleSelectPrompt(promptText);
                             }}
-                            className="flex items-start gap-2 text-slate-500/90 hover:text-indigo-300 transition-all text-xs lg:text-sm font-sans cursor-pointer group py-0.5"
+                            className="flex items-start gap-2 text-muted/90 hover:text-indigo-300 transition-all text-xs lg:text-sm font-sans cursor-pointer group py-0.5"
                           >
                             <span className="text-indigo-500/40 group-hover:text-indigo-400 transition-colors mt-0.5 select-none text-[10px]">✦</span>
                             <span className="leading-relaxed">{promptText}</span>
@@ -578,7 +578,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
                     placeholder="# Start writing...
 Use standard markdown formatting for headers, lists, and links.
 Press [[ or @ to trigger card name suggestions instantly!"
-                    className="w-full min-h-[150px] resize-none overflow-hidden bg-transparent focus:outline-none text-sm leading-relaxed text-slate-300 placeholder:text-slate-700"
+                    className="w-full min-h-[150px] resize-none overflow-hidden bg-transparent focus:outline-none text-sm leading-relaxed text-body placeholder:text-muted"
                   />
                 </motion.div>
               ) : (
@@ -587,7 +587,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="prose prose-invert prose-slate prose-indigo max-w-none prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline"
+                  className="prose prose-slate prose-indigo max-w-none prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline"
                 >
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
@@ -648,7 +648,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
                 exit={{ width: 0, opacity: 0, y: 50 }}
                 transition={{ type: "spring", bounce: 0, duration: 0.4 }}
                 className={cn(
-                  "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-slate-900/90 md:bg-slate-900/30 border-t md:border-t-0 md:border-l border-slate-800 z-30",
+                  "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-surface/90 md:bg-surface/30 border-t md:border-t-0 md:border-l border-line z-30",
                   "fixed md:static bottom-0 left-0 right-0 h-[60vh] md:h-auto rounded-t-2xl md:rounded-none"
                 )}
                 style={{
@@ -657,10 +657,10 @@ Press [[ or @ to trigger card name suggestions instantly!"
               >
                 <div className="w-full md:w-[384px] h-full relative flex flex-col"> 
                    {view === 'edit' ? (
-                     <div className="flex flex-col h-full bg-slate-900/50 pt-2">
-                        <div className="px-5 py-4 bg-slate-800/20 border-b border-slate-800 flex items-center gap-2 shrink-0">
+                     <div className="flex flex-col h-full bg-surface/50 pt-2">
+                        <div className="px-5 py-4 bg-surface-raised/20 border-b border-line flex items-center gap-2 shrink-0">
                            <Sparkles className="w-4 h-4 text-indigo-400" />
-                           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Oracle Prediction</span>
+                           <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Oracle Prediction</span>
                         </div>
                         <div className="flex-1 overflow-y-auto w-full">
                           {suggestions.map((s, i) => (
@@ -668,10 +668,10 @@ Press [[ or @ to trigger card name suggestions instantly!"
                               key={s}
                               onClick={() => handleApplySuggestion(s)}
                               className={cn(
-                                "w-full text-left px-5 py-3 text-sm border-b border-slate-800/50 last:border-0 transition-colors font-medium flex items-center justify-between",
+                                "w-full text-left px-5 py-3 text-sm border-b border-line/50 last:border-0 transition-colors font-medium flex items-center justify-between",
                                 i === suggestionCursor
-                                  ? "bg-indigo-600 text-white"
-                                  : "text-slate-300 hover:bg-slate-800/50 hover:text-indigo-400"
+                                  ? "bg-indigo-600 text-ink"
+                                  : "text-body hover:bg-surface-raised/50 hover:text-indigo-400"
                               )}
                             >
                               {s}
@@ -692,7 +692,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
                          setHoveredCardName(null);
                        }
                      }}
-                     className="md:hidden absolute top-4 right-4 p-2 bg-slate-800/80 rounded-full text-slate-400 hover:text-white"
+                     className="md:hidden absolute top-4 right-4 p-2 bg-surface-raised/80 rounded-full text-faint hover:text-ink"
                    >
                      <X className="w-4 h-4" />
                    </button>
@@ -704,7 +704,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
       </div>
       
       {/* Footer Info Area */}
-      <footer className="h-10 border-t border-slate-800 px-4 lg:px-8 flex items-center text-slate-600 font-mono text-[9px] lg:text-[10px] space-x-3 lg:space-x-6 bg-slate-950 shrink-0 select-none">
+      <footer className="h-10 border-t border-line px-4 lg:px-8 flex items-center text-muted font-mono text-[9px] lg:text-[10px] space-x-3 lg:space-x-6 bg-paper shrink-0 select-none">
         <span>Words: {entry.content.trim() ? entry.content.trim().split(/\s+/).length : 0}</span>
         <span>Chars: {entry.content.length}</span>
         <span>Est. Read Time: {Math.ceil((entry.content.trim() ? entry.content.trim().split(/\s+/).length : 0) / 200)} {Math.ceil((entry.content.trim() ? entry.content.trim().split(/\s+/).length : 0) / 200) === 1 ? 'min' : 'mins'}</span>
@@ -712,7 +712,7 @@ Press [[ or @ to trigger card name suggestions instantly!"
         <div className="flex items-center space-x-2 lg:space-x-4">
           <button 
             onClick={() => setShowShortcuts(true)}
-            className="flex items-center gap-1 hover:text-indigo-400 transition-colors py-1 cursor-pointer mr-2 text-slate-400 font-medium"
+            className="flex items-center gap-1 hover:text-indigo-400 transition-colors py-1 cursor-pointer mr-2 text-faint font-medium"
             title="Keyboard Shortcuts Guide (Ctrl+/)"
           >
             <Command className="w-3 h-3 text-indigo-400" />
@@ -752,37 +752,37 @@ Press [[ or @ to trigger card name suggestions instantly!"
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-800 rounded-xl max-w-sm md:max-w-md w-full p-6 shadow-2xl relative"
+              className="bg-surface border border-line rounded-xl max-w-sm md:max-w-md w-full p-6 shadow-2xl relative"
             >
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="absolute top-4 right-4 p-1.5 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors"
+                className="absolute top-4 right-4 p-1.5 bg-surface-raised hover:bg-surface-overlay rounded-full text-faint hover:text-ink transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2 mb-5">
                 <Command className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Keyboard Shortcuts Guide</h3>
+                <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Keyboard Shortcuts Guide</h3>
               </div>
               <div className="space-y-5">
                 <div>
                   <div className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mb-2.5">System & Navigation</div>
                   <div className="space-y-2 font-mono text-[11px]">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Create New Entry</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘N / Ctrl+N</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Create New Entry</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘N / Ctrl+N</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Toggle View / Preview</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘P / Ctrl+P</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Toggle View / Preview</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘P / Ctrl+P</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Manual Save Trigger</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘S / Ctrl+S</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Manual Save Trigger</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘S / Ctrl+S</kbd>
                     </div>
                     <div className="flex items-center justify-between pb-0.5">
-                      <span className="text-slate-400">Toggle This Guide</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘/ / Ctrl+/</kbd>
+                      <span className="text-faint">Toggle This Guide</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘/ / Ctrl+/</kbd>
                     </div>
                   </div>
                 </div>
@@ -790,33 +790,33 @@ Press [[ or @ to trigger card name suggestions instantly!"
                 <div>
                   <div className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mb-2.5">Markdown Editor & MTG Cards</div>
                   <div className="space-y-2 font-mono text-[11px]">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Bold Selection</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘B / Ctrl+B</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Bold Selection</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘B / Ctrl+B</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Italic Selection</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘I / Ctrl+I</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Italic Selection</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘I / Ctrl+I</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Inline Code Block</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘E / Ctrl+E</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Inline Code Block</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘E / Ctrl+E</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Insert Web Link</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘K / Ctrl+K</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Insert Web Link</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘K / Ctrl+K</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Wrap with Card notation</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">⌘G / Ctrl+G</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Wrap with Card notation</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘G / Ctrl+G</kbd>
                     </div>
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                      <span className="text-slate-400">Predictive Autocomplete</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">[[ or @</kbd>
+                    <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
+                      <span className="text-faint">Predictive Autocomplete</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">[[ or @</kbd>
                     </div>
                     <div className="flex items-center justify-between pb-0.5">
-                      <span className="text-slate-400">Navigate Predictions</span>
-                      <kbd className="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] text-slate-200">↑/↓ & Enter</kbd>
+                      <span className="text-faint">Navigate Predictions</span>
+                      <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">↑/↓ & Enter</kbd>
                     </div>
                   </div>
                 </div>

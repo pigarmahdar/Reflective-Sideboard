@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# local npm cache (sandbox workaround; see docs)
+.npm-cache/
