@@ -40,12 +40,9 @@ jobs:
           PAGES_BASE: /${{ github.event.repository.name }}/
         run: npm run build
 
-      # enablement: true lets this action CREATE the Pages site on repos where
-      # Pages is not yet enabled. Without it the action only reads an existing
-      # site and fails with "Get Pages site failed ... Not Found".
+      # The Pages site already exists with build_type=workflow (set via the API),
+      # so this only needs to read it and mint the deployment token.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
