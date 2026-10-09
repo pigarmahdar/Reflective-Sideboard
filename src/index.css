@@ -22,6 +22,8 @@
   --color-accent: #4f46e5;       /* indigo-600 */
   --color-accent-hover: #6366f1; /* indigo-500 */
   --color-accent-soft: #eef2ff;  /* indigo-50 tinted fills */
+  --color-accent-strong: #4338ca; /* indigo-700: emphasized accent text (brand, selected entry) */
+  --color-accent-mid: #4f46e5;    /* indigo-600: small accent labels & section headers */
 
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -39,6 +41,8 @@
   --color-line: #1e293b;         /* slate-800 */
   --color-line-strong: #334155;  /* slate-700 */
   --color-accent-soft: #1e1b4b;  /* indigo-950 tinted fills */
+  --color-accent-strong: #e0e7ff; /* indigo-100 (pre-theme palette) */
+  --color-accent-mid: #818cf8;    /* indigo-400 (pre-theme palette) */
 }
 
 /* Native UI (scrollbars, form controls, selection) follows the theme */

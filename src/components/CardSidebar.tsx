@@ -7,7 +7,6 @@ import React, { useEffect, useState } from 'react';
 import { ScryfallService } from '../services/scryfall';
 import { MTGCard } from '../types';
 import { Loader2, ExternalLink, Image as ImageIcon, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 interface CardSidebarProps {
@@ -49,7 +48,7 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
     <aside className="w-full h-full flex flex-col shrink-0 overflow-hidden">
       <div className="p-4 border-b border-line bg-surface/50">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-faint">Card Preview</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Card Preview</h3>
           {card && (
             <button 
               onClick={handleCopy}
@@ -65,51 +64,29 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
             href={card.scryfall_uri} 
             target="_blank" 
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-[9px] text-indigo-400/80 font-bold uppercase tracking-widest hover:text-indigo-400 transition-colors mt-2"
+            className="inline-flex items-center gap-1.5 text-[9px] text-accent-mid/80 font-bold uppercase tracking-widest hover:text-accent-mid transition-colors mt-2"
           >
             Scryfall Database <ExternalLink className="w-3 h-3" />
           </a>
         )}
       </div>
       <div className="flex-1 overflow-y-auto w-full">
-        <AnimatePresence mode="wait">
           {!cardName && !card ? (
-            <motion.div 
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center p-8 text-center text-muted mt-20"
-            >
+            <div className="flex flex-col items-center justify-center p-8 text-center text-muted mt-20">
               <div className="w-16 h-16 bg-surface-raised/50 rounded-xl flex items-center justify-center mb-4">
                 <ImageIcon className="w-8 h-8 opacity-40" />
               </div>
               <p className="text-xs font-medium leading-relaxed">Hover over a card mention in preview to view it here.</p>
-            </motion.div>
+            </div>
           ) : loading ? (
-             <motion.div 
-               key="loading" 
-               initial={{ opacity: 0 }} 
-               animate={{ opacity: 1 }} 
-               exit={{ opacity: 0 }} 
-               className="flex justify-center flex-col items-center h-48 mt-20"
-             >
+             <div className="flex justify-center flex-col items-center h-48 mt-20">
                <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-4" />
                <span className="text-xs font-medium text-muted uppercase tracking-wider">Locating...</span>
-             </motion.div>
+             </div>
           ) : card ? (
-             <motion.div 
-               key={card.id} 
-               initial={{ opacity: 0, y: 10 }} 
-               animate={{ opacity: 1, y: 0 }} 
-               exit={{ opacity: 0, y: -10 }} 
-               className="flex flex-col p-6 h-full"
-             >
+             <div className="flex flex-col p-6 h-full">
                 {card.image_uris?.normal ? (
-                  <img src={card.image_uris.normal} alt={card.name} className={cn(
-                    "mx-auto rounded-xl shadow-2xl mb-6 shadow-indigo-500/10 transition-all duration-500 ease-in-out origin-top",
-                    expanded ? "w-1/3 opacity-40 mb-2 scale-95" : "w-3/4 scale-100"
-                  )} />
+                  <img src={card.image_uris.normal} alt={card.name} className="mx-auto rounded-xl shadow-2xl mb-6 shadow-indigo-500/10 w-3/4" />
                 ) : (
                   <div className="w-3/4 aspect-[2.5/3.5] mx-auto bg-surface-raised rounded-xl flex items-center justify-center mb-6 border border-line-strong">
                     <span className="text-muted text-xs text-center px-4">No image available</span>
@@ -136,7 +113,7 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
                     {card.oracle_text && card.oracle_text.length > 100 && (
                       <button 
                         onClick={() => setExpanded(!expanded)}
-                        className="mt-3 flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors w-fit"
+                        className="mt-3 flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-accent-mid hover:text-accent-strong transition-colors w-fit"
                       >
                         {expanded ? (
                           <>Collapse <ChevronUp className="w-3 h-3" /></>
@@ -147,16 +124,12 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
                     )}
                   </div>
                 </div>
-             </motion.div>
+             </div>
           ) : (
-             <motion.div 
-               key="error" 
-               className="flex flex-col items-center justify-center p-8 text-center text-red-400 mt-20"
-             >
+             <div className="flex flex-col items-center justify-center p-8 text-center text-red-400 mt-20">
                <span className="text-xs font-medium">Card not found.</span>
-             </motion.div>
+             </div>
           )}
-        </AnimatePresence>
       </div>
     </aside>
   );

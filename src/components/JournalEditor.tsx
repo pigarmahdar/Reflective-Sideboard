@@ -712,13 +712,13 @@ Press [[ or @ to trigger card name suggestions instantly!"
         <div className="flex items-center space-x-2 lg:space-x-4">
           <button 
             onClick={() => setShowShortcuts(true)}
-            className="flex items-center gap-1 hover:text-indigo-400 transition-colors py-1 cursor-pointer mr-2 text-faint font-medium"
+            className="flex items-center gap-1 hover:text-indigo-400 transition-colors py-1 cursor-pointer mr-2 text-muted font-medium"
             title="Keyboard Shortcuts Guide (Ctrl+/)"
           >
-            <Command className="w-3 h-3 text-indigo-400" />
+            <Command className="w-3 h-3 text-accent-mid" />
             <span className="text-[9px] lg:text-[10px]">Shortcuts</span>
           </button>
-          <span className="text-slate-800">|</span>
+          <span className="text-line-strong">|</span>
           <span className="flex items-center space-x-1.5 font-medium transition-all duration-300">
             {isSaving ? (
               <>
@@ -732,8 +732,8 @@ Press [[ or @ to trigger card name suggestions instantly!"
               </>
             )}
           </span>
-          <span className="text-slate-800">|</span>
-          <span className="text-[8px] lg:text-[9px] uppercase tracking-widest text-slate-700">MD v1.0</span>
+          <span className="text-line-strong">|</span>
+          <span className="text-[8px] lg:text-[9px] uppercase tracking-widest text-body">MD v1.0</span>
         </div>
       </footer>
 
@@ -756,66 +756,66 @@ Press [[ or @ to trigger card name suggestions instantly!"
             >
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="absolute top-4 right-4 p-1.5 bg-surface-raised hover:bg-surface-overlay rounded-full text-faint hover:text-ink transition-colors"
+                className="absolute top-4 right-4 p-1.5 bg-surface-raised hover:bg-surface-overlay rounded-full text-muted hover:text-ink transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2 mb-5">
-                <Command className="w-5 h-5 text-indigo-400" />
+                <Command className="w-5 h-5 text-accent-mid" />
                 <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Keyboard Shortcuts Guide</h3>
               </div>
               <div className="space-y-5">
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mb-2.5">System & Navigation</div>
+                  <div className="text-[10px] uppercase font-bold text-accent-mid tracking-wider mb-2.5">System & Navigation</div>
                   <div className="space-y-2 font-mono text-[11px]">
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Create New Entry</span>
+                      <span className="text-muted">Create New Entry</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘N / Ctrl+N</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Toggle View / Preview</span>
+                      <span className="text-muted">Toggle View / Preview</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘P / Ctrl+P</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Manual Save Trigger</span>
+                      <span className="text-muted">Manual Save Trigger</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘S / Ctrl+S</kbd>
                     </div>
                     <div className="flex items-center justify-between pb-0.5">
-                      <span className="text-faint">Toggle This Guide</span>
+                      <span className="text-muted">Toggle This Guide</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘/ / Ctrl+/</kbd>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mb-2.5">Markdown Editor & MTG Cards</div>
+                  <div className="text-[10px] uppercase font-bold text-accent-mid tracking-wider mb-2.5">Markdown Editor & MTG Cards</div>
                   <div className="space-y-2 font-mono text-[11px]">
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Bold Selection</span>
+                      <span className="text-muted">Bold Selection</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘B / Ctrl+B</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Italic Selection</span>
+                      <span className="text-muted">Italic Selection</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘I / Ctrl+I</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Inline Code Block</span>
+                      <span className="text-muted">Inline Code Block</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘E / Ctrl+E</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Insert Web Link</span>
+                      <span className="text-muted">Insert Web Link</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘K / Ctrl+K</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Wrap with Card notation</span>
+                      <span className="text-muted">Wrap with Card notation</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">⌘G / Ctrl+G</kbd>
                     </div>
                     <div className="flex items-center justify-between border-b border-line/80 pb-1.5">
-                      <span className="text-faint">Predictive Autocomplete</span>
+                      <span className="text-muted">Predictive Autocomplete</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">[[ or @</kbd>
                     </div>
                     <div className="flex items-center justify-between pb-0.5">
-                      <span className="text-faint">Navigate Predictions</span>
+                      <span className="text-muted">Navigate Predictions</span>
                       <kbd className="bg-surface-raised border border-line-strong px-1.5 py-0.5 rounded text-[10px] text-ink">↑/↓ & Enter</kbd>
                     </div>
                   </div>

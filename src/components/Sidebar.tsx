@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <h1 className="text-lg font-bold tracking-tight text-ink leading-tight">
                 Reflective<br/>
-                <span className="text-indigo-400 font-medium">Sideboard</span>
+                <span className="text-accent-strong font-medium">Sideboard</span>
               </h1>
             </div>
             <button onClick={onClose} className="md:hidden text-faint hover:text-ink">
@@ -110,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         "px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1",
                         selectedTags.includes(tag) 
                           ? "bg-accent text-white" 
-                          : "bg-surface-raised text-faint hover:bg-surface-overlay hover:text-ink"
+                          : "bg-surface-raised text-body hover:bg-surface-overlay hover:text-ink"
                       )}
                     >
                       #{tag}
@@ -136,14 +136,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={cn(
                         "w-full text-left p-3 rounded-md transition-all group",
                         selectedId === entry.id 
-                          ? "bg-indigo-600/10 border-l-2 border-indigo-500 rounded-r-md text-indigo-100" 
-                          : "hover:bg-surface-raised/50 text-faint"
+                          ? "bg-indigo-600/10 border-l-2 border-indigo-500 rounded-r-md text-accent-strong"
+                          : "hover:bg-surface-raised/50 text-body hover:text-ink"
                       )}
                     >
                       <div className="font-medium text-sm truncate">
                         {entry.title || "Untitled Entry"}
                       </div>
-                      <div className="text-[11px] opacity-60 mt-1 flex items-center gap-2">
+                      <div className="text-[11px] text-muted mt-1 flex items-center gap-2">
                         {formatDate(entry.date)}
                       </div>
                     </button>
@@ -173,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={onBackup}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface/50 px-3 py-2 text-xs font-medium text-faint transition-all hover:border-line-strong hover:text-ink"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface/50 px-3 py-2 text-xs font-medium text-muted transition-all hover:border-line-strong hover:text-ink"
               title="Download your full journal as JSON"
             >
               <ArchiveRestore className="w-3.5 h-3.5" aria-hidden="true" />
@@ -182,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => restoreInputRef.current?.click()}
-              className="inline-flex items-center justify-center rounded-lg border border-line bg-surface/50 p-2 text-faint transition-all hover:border-line-strong hover:text-ink"
+              className="inline-flex items-center justify-center rounded-lg border border-line bg-surface/50 p-2 text-muted transition-all hover:border-line-strong hover:text-ink"
               title="Restore from a backup file (replaces current library)"
               aria-label="Restore from backup"
             >
