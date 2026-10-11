@@ -31,7 +31,7 @@ To keep your hands on the keyboard and maintain flow state, Reflective Sideboard
 
 #### System & Navigation
 *   **Create New Entry**: `Cmd + N` or `Ctrl + N` (instantly spins up a new blank sideboard note).
-*   **Toggle Write & Preview**: `Cmd + P` or `Ctrl + P`.
+*   **Toggle Write & Preview**: `Cmd + P` or `Ctrl + P` (active while an entry is open — not on the empty screen).
 *   **Save Flash / Force Sync**: `Cmd + S` or `Ctrl + S` (manually triggers a visual saving indicator).
 *   **Toggle Shortcuts Guide**: `Cmd + /` or `Ctrl + /` (can also close with `Escape`).
 

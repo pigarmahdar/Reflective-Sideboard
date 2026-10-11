@@ -21,7 +21,7 @@ Reflective Sideboard is built on a few simple, intentional principles:
 *   **The Stimulus:** Every blank page is a terrifying thing. When you create a new entry, I’ve asked the app to whisper a few gentle, randomised prompts—invitations to think about your play style, the cards you're obsessing over, or the moments at your LGS that made you remember why you play. 
 
 ## Features for the Flow State
-*   **Keyboard-First Navigation:** built this to keep your hands on the keys. `Cmd + N` spawns a new entry; `Cmd + P` flips between your draft and the finished look.
+*   **Keyboard-First Navigation:** built this to keep your hands on the keys. `Cmd + N` spawns a new entry; while writing an entry, `Cmd + P` flips between your draft and the finished look.
 *   **Real-time Intelligence:** The sidebar is a reactive, "debounced" search engine. It’s butter-smooth, filtering through your archive of matchups and theorycrafting sessions without a stutter.
 *   **Exportable Memory:** Your entries are yours. Export a single note as a `.md` file from the editor, or take your whole library with you as one JSON backup from the sidebar. Restore it on any machine and pick up where you left off.
 *   **Light and Dark:** A theme toggle in the sidebar applies to the entire workspace — editor, previews, and modals included. Your choice is remembered, and on a first visit the app follows your operating system preference.
@@ -86,8 +86,9 @@ A custom event listener intercepts target keystrokes to facilitate an entirely m
 
 *   **Global Layout Shortcuts**:
     *   `Cmd/Ctrl + N`: Instant entry initiation.
-    *   `Cmd/Ctrl + P`: Real-time rendering toggles (Write vs. Preview layout views).
     *   `Cmd/Ctrl + /`: Launches/dismisses the Keyboard Shortcuts Guide overlay.
+*   **Editor Shortcuts** (active while an entry is open):
+    *   `Cmd/Ctrl + P`: Real-time rendering toggles (Write vs. Preview layout views).
 *   **Text Selection Wrapping Engine**:
     Keystrokes in the text area (`Cmd/Ctrl + B` for Bold, `Cmd/Ctrl + I` for Italic, `Cmd/Ctrl + E` for Inline Code, `Cmd/Ctrl + G` for Card bracket formatting, and `Cmd/Ctrl + K` for Link insertions) are handled by a cursor position offset tracker.
 
