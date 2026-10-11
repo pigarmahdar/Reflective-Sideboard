@@ -32,3 +32,14 @@ export interface JournalState {
   searchQuery: string;
   selectedTags: string[];
 }
+
+/**
+ * A soft-deleted entry awaiting either "Put back" (restore to library)
+ * or permanent removal from the trash panel. The embedded `entry` object
+ * is kept whole so a put-back is lossless.
+ */
+export interface TrashItem {
+  entry: JournalEntry;
+  /** ISO timestamp of when the entry was soft-deleted. */
+  deletedAt: string;
+}

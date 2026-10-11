@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef } from 'react';
-import { JournalEntry } from '../types';
-import { cn, formatDate } from '../lib/utils';
-import { Plus, Tag, Search, Hash, Clock, BookOpen, X, ArchiveRestore, Upload } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { JournalEntry, TrashItem } from '../types';
+import { cn, formatDate, getRelativeTime } from '../lib/utils';
+import { Plus, Search, BookOpen, X, ArchiveRestore, Upload, Trash2, Undo2, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ThemeToggle } from './ThemeToggle';
 import type { Theme } from '../hooks/useTheme';
@@ -27,6 +27,9 @@ interface SidebarProps {
   onThemeChange: (theme: Theme) => void;
   onBackup: () => void;
   onRestore: (file: File) => void;
+  trash: TrashItem[];
+  onPutBack: (id: string) => void;
+  onDeleteForever: (id: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -44,10 +47,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   onThemeChange,
   onBackup,
-  onRestore
+  onRestore,
+  trash,
+  onPutBack,
+  onDeleteForever
 }) => {
   // Hidden file input so restore is a native picker rather than a drag-and-drop surface
   const restoreInputRef = useRef<HTMLInputElement>(null);
+  // Recently Deleted section is collapsed by default so it never clutters the
+  // default view, but stays visible enough that users know it's there.
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
 
   return (
     <>
@@ -153,7 +162,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         </div>
-        
+
+        {/* Recently Deleted — kept above the footer so it's easy to find,
+            collapsed by default to keep the sidebar uncluttered. */}
+        {trash.length > 0 && (
+          <div className="px-6 pb-4 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsTrashOpen(prev => !prev)}
+              aria-expanded={isTrashOpen}
+              className="w-full inline-flex items-center justify-between gap-2 text-[10px] uppercase tracking-widest text-muted font-bold hover:text-ink transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <Trash2 className="w-3 h-3" aria-hidden="true" />
+                Recently Deleted
+                <span className="px-1.5 py-0.5 rounded bg-surface-raised text-[10px] font-mono text-body">
+                  {trash.length}
+                </span>
+              </span>
+              {isTrashOpen ? (
+                <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isTrashOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
+                    {trash.map(({ entry, deletedAt }) => (
+                      <div
+                        key={entry.id}
+                        className="group flex items-start gap-2 rounded-md px-2 py-2 bg-surface-raised/30 hover:bg-surface-raised/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-body truncate">
+                            {entry.title || 'Untitled Entry'}
+                          </div>
+                          <div className="text-[10px] text-muted mt-0.5">
+                            {formatDate(entry.date)} · deleted {getRelativeTime(deletedAt)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => onPutBack(entry.id)}
+                            title="Put back to library"
+                            aria-label={`Put back ${entry.title || 'Untitled Entry'}`}
+                            className="p-1 rounded text-muted hover:text-accent-strong hover:bg-surface-overlay/50 transition-colors"
+                          >
+                            <Undo2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteForever(entry.id)}
+                            title="Delete permanently"
+                            aria-label={`Delete ${entry.title || 'Untitled Entry'} permanently`}
+                            className="p-1 rounded text-muted hover:text-red-400 hover:bg-surface-overlay/50 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         <div className="mt-auto p-6 border-t border-line shrink-0 space-y-2">
           <ThemeToggle theme={theme} onThemeChange={onThemeChange} />
 

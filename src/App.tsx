@@ -11,7 +11,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { JournalEditor } from './components/JournalEditor';
-import { JournalEntry } from './types';
+import { UndoToast } from './components/UndoToast';
+import { JournalEntry, TrashItem } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, BookOpen, Menu } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -20,7 +21,10 @@ import { saveAs } from 'file-saver';
 import { useTheme } from './hooks/useTheme';
 
 const STORAGE_KEY = 'spellbook_journal_entries';
-const BACKUP_SCHEMA_VERSION = 1;
+// Namespaced separately from STORAGE_KEY so the legacy, pre-trash key is left
+// untouched and old data keeps working without a risky migration.
+const TRASH_STORAGE_KEY = 'sideboard:v1:trash';
+const BACKUP_SCHEMA_VERSION = 2;
 
 export default function App() {
   const { theme, setTheme } = useTheme();
@@ -34,6 +38,17 @@ export default function App() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Soft-deleted entries awaiting either "Put back" or permanent removal.
+  const [trash, setTrash] = useState<TrashItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(TRASH_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  // The entry just deleted, if any — drives the undo toast.
+  const [lastDeleted, setLastDeleted] = useState<{ id: string; title: string } | null>(null);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -105,6 +120,11 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [entries]);
 
+  // Trash persistence — kept in its own key so the legacy entries key is untouched.
+  useEffect(() => {
+    localStorage.setItem(TRASH_STORAGE_KEY, JSON.stringify(trash));
+  }, [trash]);
+
   // Derived state: All unique tags from all entries
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -139,12 +159,36 @@ export default function App() {
     entries.find(e => e.id === selectedId) || null,
   [entries, selectedId]);
 
+  /**
+   * Soft delete: move the entry to the trash and show an undo toast instead
+   * of blocking on a native confirm dialog. Nothing is lost — the entry
+   * object is kept whole so "Put back" is lossless.
+   */
   const handleDeleteEntry = () => {
     if (!selectedId) return;
-    if (confirm('Are you sure you want to delete this entry? This cannot be undone.')) {
-      setEntries(prev => prev.filter(e => e.id !== selectedId));
-      setSelectedId(null);
-    }
+    const entry = entries.find(e => e.id === selectedId);
+    if (!entry) return;
+
+    const deletedAt = new Date().toISOString();
+    setTrash(prev => [{ entry, deletedAt }, ...prev]);
+    setEntries(prev => prev.filter(e => e.id !== selectedId));
+    setSelectedId(null);
+    setLastDeleted({ id: entry.id, title: entry.title });
+  };
+
+  /** Undo a soft delete (from the toast or from the trash panel). */
+  const handlePutBack = (id: string) => {
+    const item = trash.find(t => t.entry.id === id);
+    if (!item) return;
+    setEntries(prev => [item.entry, ...prev]);
+    setTrash(prev => prev.filter(t => t.entry.id !== id));
+    if (lastDeleted?.id === id) setLastDeleted(null);
+  };
+
+  /** Permanently remove an entry from the trash. */
+  const handleTrashEntry = (id: string) => {
+    setTrash(prev => prev.filter(t => t.entry.id !== id));
+    if (lastDeleted?.id === id) setLastDeleted(null);
   };
 
   const toggleTag = (tag: string) => {
@@ -153,13 +197,18 @@ export default function App() {
     );
   };
 
-  /** Export the full archive as a JSON file. Uses `entries`, not the filtered list. */
+  /**
+   * Export the full archive as a JSON file. `entries` is the live library
+   * (not the filtered view); the trash ships alongside it under its own
+   * `recentlyDeleted` key so nothing is silently dropped.
+   */
   const handleBackup = () => {
     const payload = {
       schemaVersion: BACKUP_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
       app: 'reflective-sideboard',
       entries,
+      recentlyDeleted: trash,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const stamp = new Date().toISOString().slice(0, 10);
@@ -169,6 +218,8 @@ export default function App() {
   /**
    * Replace the archive from a previously exported backup.
    * Validates shape before touching state so a bad file cannot wipe good data.
+   * Accepts a `recentlyDeleted` key (schema v2); older backups default to an
+   * empty trash.
    */
   const handleRestore = (file: File) => {
     const reader = new FileReader();
@@ -181,21 +232,33 @@ export default function App() {
           return;
         }
         // Minimal per-record check: title/content/date are what the UI relies on.
+        const normaliseEntry = (e: any): JournalEntry => ({
+          id: typeof e.id === 'string' && e.id ? e.id : crypto.randomUUID(),
+          title: typeof e.title === 'string' ? e.title : '',
+          content: e.content,
+          date: typeof e.date === 'string' ? e.date : new Date().toISOString(),
+          lastModified: typeof e.lastModified === 'string' ? e.lastModified : new Date().toISOString(),
+          tags: Array.isArray(e.tags) ? e.tags.filter((t: unknown) => typeof t === 'string') : [],
+        });
+
         const normalised: JournalEntry[] = candidate
           .filter(e => e && typeof e === 'object' && typeof e.content === 'string')
-          .map(e => ({
-            id: typeof e.id === 'string' && e.id ? e.id : crypto.randomUUID(),
-            title: typeof e.title === 'string' ? e.title : '',
-            content: e.content,
-            date: typeof e.date === 'string' ? e.date : new Date().toISOString(),
-            lastModified: typeof e.lastModified === 'string' ? e.lastModified : new Date().toISOString(),
-            tags: Array.isArray(e.tags) ? e.tags.filter((t: unknown) => typeof t === 'string') : [],
-          }));
+          .map(normaliseEntry);
 
         if (normalised.length === 0) {
           alert('No usable entries found in that backup.');
           return;
         }
+
+        // Trash is optional; older backups omit it entirely.
+        const candidateTrash = Array.isArray(parsed?.recentlyDeleted) ? parsed.recentlyDeleted : [];
+        const normalisedTrash: TrashItem[] = candidateTrash
+          .filter((t: any) => t && typeof t === 'object' && t.entry && typeof t.entry === 'object' && typeof t.entry.content === 'string')
+          .map((t: any) => ({
+            entry: normaliseEntry(t.entry),
+            deletedAt: typeof t.deletedAt === 'string' ? t.deletedAt : new Date().toISOString(),
+          }));
+
         const ok = confirm(
           `Restore ${normalised.length} ${normalised.length === 1 ? 'entry' : 'entries'}? ` +
           `This replaces your current ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} and cannot be undone.`
@@ -203,6 +266,8 @@ export default function App() {
         if (!ok) return;
 
         setEntries(normalised);
+        setTrash(normalisedTrash);
+        setLastDeleted(null);
         setSelectedId(null);
         setSearchQuery('');
         setSelectedTags([]);
@@ -232,6 +297,9 @@ export default function App() {
         onThemeChange={setTheme}
         onBackup={handleBackup}
         onRestore={handleRestore}
+        trash={trash}
+        onPutBack={handlePutBack}
+        onDeleteForever={handleTrashEntry}
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -299,6 +367,19 @@ export default function App() {
 
       {/* Decorative Texture Overlays */}
       <div className="fixed inset-0 pointer-events-none hidden [&:where(:root[data-theme=dark]_*)]:block opacity-[0.02] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
+
+      {/* Undo toast for soft-deleted entries — rendered outside the flex
+          layout so it isn't clipped by the overflow-hidden containers. */}
+      <AnimatePresence>
+        {lastDeleted && (
+          <UndoToast
+            key={lastDeleted.id}
+            entryTitle={lastDeleted.title}
+            onUndo={() => handlePutBack(lastDeleted.id)}
+            onDismiss={() => setLastDeleted(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
