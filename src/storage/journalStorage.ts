@@ -1,0 +1,207 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import type { JournalEntry, TrashItem } from '../types.ts';
+
+export const LEGACY_ENTRIES_KEY = 'spellbook_journal_entries';
+export const CURRENT_ENTRIES_KEY = 'sideboard:v1:entries';
+export const TRASH_STORAGE_KEY = 'sideboard:v1:trash';
+
+export type JournalMigrationStatus =
+  | 'canonical'
+  | 'migrated'
+  | 'empty'
+  | 'legacy-empty'
+  | 'legacy-invalid'
+  | 'storage-unavailable'
+  | 'storage-write-failed';
+
+export interface JournalLoadResult {
+  entries: JournalEntry[];
+  migrationStatus: JournalMigrationStatus;
+}
+
+export interface StorageLoadResult<T> {
+  value: T;
+  status: 'loaded' | 'missing' | 'invalid' | 'storage-unavailable';
+}
+
+export interface JournalStorage {
+  loadEntries(): JournalLoadResult;
+  saveEntries(entries: JournalEntry[]): void;
+  loadTrash(): StorageLoadResult<TrashItem[]>;
+  saveTrash(trash: TrashItem[]): void;
+}
+
+function getStorage(): Storage | null {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** JSON.parse that returns undefined for missing or malformed payloads. */
+function readJson(storage: Storage, key: string): unknown {
+  try {
+    const raw = storage.getItem(key);
+    return raw === null ? undefined : JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeEntry(value: unknown): JournalEntry | null {
+  if (!isRecord(value) || typeof value.content !== 'string') return null;
+
+  const date = typeof value.date === 'string' && value.date ? value.date : new Date().toISOString();
+  return {
+    id: typeof value.id === 'string' && value.id ? value.id : crypto.randomUUID(),
+    title: typeof value.title === 'string' ? value.title : '',
+    content: value.content,
+    date,
+    lastModified: typeof value.lastModified === 'string' && value.lastModified ? value.lastModified : date,
+    tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+  };
+}
+
+function normalizeEntries(value: unknown): { entries: JournalEntry[]; invalidCount: number; hasUsableEntry: boolean } | null {
+  if (!Array.isArray(value)) return null;
+
+  const entries: JournalEntry[] = [];
+  let invalidCount = 0;
+  let hasUsableEntry = false;
+
+  for (const candidate of value) {
+    const entry = normalizeEntry(candidate);
+    if (entry) {
+      entries.push(entry);
+    } else {
+      invalidCount += 1;
+    }
+
+    // Preserve a legacy blank entry as a record even though it has no
+    // searchable content. The app creates empty entries routinely.
+    if (isRecord(candidate) && typeof candidate.content === 'string') {
+      hasUsableEntry = true;
+    }
+  }
+
+  return { entries, invalidCount, hasUsableEntry };
+}
+
+function normalizeTrash(value: unknown): TrashItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((candidate): TrashItem[] => {
+    if (!isRecord(candidate) || !isRecord(candidate.entry)) return [];
+    const entry = normalizeEntry(candidate.entry);
+    if (!entry) return [];
+
+    return [{
+      entry,
+      deletedAt: typeof candidate.deletedAt === 'string' && candidate.deletedAt
+        ? candidate.deletedAt
+        : new Date().toISOString(),
+    }];
+  });
+}
+
+function writeJson(storage: Storage, key: string, value: unknown): boolean {
+  try {
+    storage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Browser-storage repository for journal entries and trash.
+ *
+ * The entries key is namespaced and versioned (`sideboard:v1:entries`). On
+ * first load, a valid legacy `spellbook_journal_entries` payload is copied to
+ * the canonical key. The legacy key is intentionally retained as a recovery
+ * copy; it is never removed or overwritten by this module.
+ */
+export const journalStorage: JournalStorage = {
+  loadEntries(): JournalLoadResult {
+    const storage = getStorage();
+    if (!storage) {
+      return { entries: [], migrationStatus: 'storage-unavailable' };
+    }
+
+    const canonicalValue = readJson(storage, CURRENT_ENTRIES_KEY);
+
+    if (canonicalValue !== undefined) {
+      const canonical = normalizeEntries(canonicalValue);
+      if (canonical) {
+        return { entries: canonical.entries, migrationStatus: 'canonical' };
+      }
+
+      // A malformed canonical payload must never cause a silent library wipe.
+      // Fall through to the legacy recovery copy, but do not overwrite either
+      // key until the user has a chance to inspect the failure.
+      const legacy = readJson(storage, LEGACY_ENTRIES_KEY);
+      const legacyResult = legacy === undefined ? null : normalizeEntries(legacy);
+      if (legacyResult) {
+        return { entries: legacyResult.entries, migrationStatus: 'legacy-invalid' };
+      }
+      return { entries: [], migrationStatus: 'legacy-invalid' };
+    }
+
+    const legacyValue = readJson(storage, LEGACY_ENTRIES_KEY);
+    if (legacyValue === undefined) {
+      return { entries: [], migrationStatus: 'empty' };
+    }
+
+    const legacy = normalizeEntries(legacyValue);
+    if (!legacy) {
+      return { entries: [], migrationStatus: 'legacy-invalid' };
+    }
+
+    if (legacy.entries.length === 0 && !legacy.hasUsableEntry) {
+      return { entries: [], migrationStatus: 'legacy-empty' };
+    }
+
+    if (!writeJson(storage, CURRENT_ENTRIES_KEY, legacy.entries)) {
+      return { entries: legacy.entries, migrationStatus: 'storage-write-failed' };
+    }
+
+    return {
+      entries: legacy.entries,
+      migrationStatus: legacy.invalidCount > 0 ? 'legacy-invalid' : 'migrated',
+    };
+  },
+
+  saveEntries(entries: JournalEntry[]): void {
+    const storage = getStorage();
+    if (storage) writeJson(storage, CURRENT_ENTRIES_KEY, entries);
+  },
+
+  loadTrash(): StorageLoadResult<TrashItem[]> {
+    const storage = getStorage();
+    if (!storage) {
+      return { value: [], status: 'storage-unavailable' };
+    }
+
+    const raw = readJson(storage, TRASH_STORAGE_KEY);
+    if (raw === undefined) {
+      return { value: [], status: 'missing' };
+    }
+
+    const trash = normalizeTrash(raw);
+    return { value: trash, status: Array.isArray(raw) && trash.length === 0 && raw.length > 0 ? 'invalid' : 'loaded' };
+  },
+
+  saveTrash(trash: TrashItem[]): void {
+    const storage = getStorage();
+    if (storage) writeJson(storage, TRASH_STORAGE_KEY, trash);
+  },
+};

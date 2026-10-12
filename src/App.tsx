@@ -19,19 +19,36 @@ import { cn } from './lib/utils';
 import Fuse from 'fuse.js';
 import { saveAs } from 'file-saver';
 import { useTheme } from './hooks/useTheme';
+import { journalStorage, JournalMigrationStatus } from './storage/journalStorage';
 
-const STORAGE_KEY = 'spellbook_journal_entries';
-// Namespaced separately from STORAGE_KEY so the legacy, pre-trash key is left
-// untouched and old data keeps working without a risky migration.
-const TRASH_STORAGE_KEY = 'sideboard:v1:trash';
 const BACKUP_SCHEMA_VERSION = 2;
+
+// Deliberately outside the component so the notification reflects the actual
+// one-time load/migration outcome rather than changing on later renders.
+const MIGRATION_NOTICES: Record<JournalMigrationStatus, string | null> = {
+  canonical: null,
+  migrated: 'Journal migrated to the new local storage key.',
+  empty: null,
+  'legacy-empty': 'Your previous journal was empty, so no entries needed migrating.',
+  'legacy-invalid': 'Some journal data could not be migrated safely. The original data was left untouched.',
+  'storage-unavailable': 'Browser storage is unavailable. Changes will not persist after this tab is closed.',
+  'storage-write-failed': 'The migrated journal could not be written to the new storage key. The original data was left untouched.',
+};
+
+const TRASH_NOTICES: Record<string, string | null> = {
+  loaded: null,
+  missing: null,
+  invalid: 'Some recently deleted data could not be loaded safely and was left untouched.',
+  'storage-unavailable': 'Browser storage is unavailable. Deleted entries will not persist after this tab is closed.',
+};
 
 export default function App() {
   const { theme, setTheme } = useTheme();
-  const [entries, setEntries] = useState<JournalEntry[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Read through the repository boundary so React never depends on storage
+  // keys or legacy schema details. The repository also performs the one-time
+  // legacy-key migration and preserves the old payload on failure.
+  const [entriesResult] = useState(() => journalStorage.loadEntries());
+  const [entries, setEntries] = useState<JournalEntry[]>(entriesResult.entries);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -39,14 +56,8 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   // Soft-deleted entries awaiting either "Put back" or permanent removal.
-  const [trash, setTrash] = useState<TrashItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(TRASH_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [trashResult] = useState(() => journalStorage.loadTrash());
+  const [trash, setTrash] = useState<TrashItem[]>(trashResult.value);
   // The entry just deleted, if any — drives the undo toast.
   const [lastDeleted, setLastDeleted] = useState<{ id: string; title: string } | null>(null);
   const isFirstRender = useRef(true);
@@ -106,9 +117,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Persistence
+  // Persistence — kept behind journalStorage so this component only manages
+  // application state, not browser-storage keys or serialization.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    journalStorage.saveEntries(entries);
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
@@ -122,7 +134,7 @@ export default function App() {
 
   // Trash persistence — kept in its own key so the legacy entries key is untouched.
   useEffect(() => {
-    localStorage.setItem(TRASH_STORAGE_KEY, JSON.stringify(trash));
+    journalStorage.saveTrash(trash);
   }, [trash]);
 
   // Derived state: All unique tags from all entries
@@ -158,6 +170,13 @@ export default function App() {
   const selectedEntry = useMemo(() => 
     entries.find(e => e.id === selectedId) || null,
   [entries, selectedId]);
+
+  // Keep the one-time storage load outcomes visible without changing this
+  // notice on later saves. Prefer the entries migration result, then trash.
+  const storageNotice = useMemo(
+    () => MIGRATION_NOTICES[entriesResult.migrationStatus] ?? TRASH_NOTICES[trashResult.status],
+    [entriesResult.migrationStatus, trashResult.status],
+  );
 
   /**
    * Soft delete: move the entry to the trash and show an undo toast instead
@@ -364,6 +383,16 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+
+      {storageNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 right-4 z-50 max-w-sm rounded-lg border border-line bg-surface px-4 py-3 text-xs text-body shadow-xl"
+        >
+          {storageNotice}
+        </div>
+      )}
 
       {/* Decorative Texture Overlays */}
       <div className="fixed inset-0 pointer-events-none hidden [&:where(:root[data-theme=dark]_*)]:block opacity-[0.02] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
