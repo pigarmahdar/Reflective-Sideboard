@@ -494,50 +494,30 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
 
   return (
     <main className="flex-1 flex flex-col min-w-0 bg-paper h-full relative">
-      {/* Header */}
-      <header className="h-16 border-b border-line flex items-center justify-between px-4 lg:px-8 bg-paper/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
-        <div className="flex-1 flex items-center gap-3 lg:gap-6">
+      {/* Header Toolbar */}
+      <header className="h-14 border-b border-line flex items-center justify-between px-4 lg:px-8 bg-paper/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
           <button 
             onClick={onOpenSidebar}
-            className="md:hidden p-2 text-faint hover:text-ink rounded-lg border border-line bg-surface"
+            className="md:hidden p-1.5 text-faint hover:text-ink rounded-lg border border-line bg-surface"
+            title="Open Sidebar"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4" />
           </button>
-          <input 
-            type="text"
-            value={entry.title}
-            onChange={(e) => onChange({ title: e.target.value })}
-            onFocus={() => setInteracted(true)}
-            placeholder="Entry Title..."
-            className="bg-transparent border-none focus:ring-0 text-xl lg:text-2xl font-bold text-ink w-full placeholder:text-muted font-serif"
-          />
-          <div className="hidden lg:flex items-center gap-2 flex-wrap">
-            {entry.tags.map(tag => (
-              <span key={tag} className="text-xs font-semibold px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded flex items-center gap-1 group">
-                #{tag}
-                <button onClick={() => removeTag(tag)} className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            <form onSubmit={addTag} className="relative">
-              <input 
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder="+ tag"
-                className="text-[10px] bg-surface border border-line rounded px-2 py-0.5 text-muted focus:outline-none focus:border-indigo-500 w-16 transition-all"
-              />
-            </form>
+          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-muted min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/80 shrink-0" />
+            <span className="truncate max-w-[220px] lg:max-w-[360px] font-medium text-faint">
+              {entry.title.trim() || 'Untitled Note'}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="bg-surface/50 p-1 rounded-lg flex items-center mr-4 border border-line backdrop-blur-sm self-center">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="bg-surface/50 p-1 rounded-lg flex items-center border border-line backdrop-blur-sm self-center">
              <button 
                onClick={() => setView('edit')}
                className={cn(
-                 "flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
+                 "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
                  view === 'edit' ? "bg-indigo-600 shadow-sm text-ink" : "text-muted hover:text-faint"
                )}
              >
@@ -546,13 +526,15 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
              <button 
                onClick={() => setView('preview')}
                className={cn(
-                 "flex items-center gap-2 px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
+                 "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
                  view === 'preview' ? "bg-indigo-600 shadow-sm text-ink" : "text-muted hover:text-faint"
                )}
              >
                <Eye className="w-3.5 h-3.5" /> Preview
              </button>
           </div>
+
+          <div className="h-4 w-px bg-line mx-0.5" />
 
           <button onClick={handleExport} className="btn-icon" title="Export Markdown">
             <Download className="w-4 h-4" />
@@ -567,10 +549,77 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 overflow-y-auto p-6 lg:p-12 lg:px-24 pb-48 lg:pb-64 relative selection:bg-indigo-500/40">
           <div className="max-w-3xl mx-auto">
-            <div className="mb-4 lg:mb-8">
-              <div className="text-indigo-400 text-xs lg:text-sm font-mono mb-2 uppercase tracking-tighter">
-                {new Date(entry.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {/* Document Hero (Canvas Title, Date & Tags) */}
+            <div className="mb-8">
+              {/* Timestamp */}
+              <div className="text-indigo-400 text-xs font-mono mb-2 uppercase tracking-wider">
+                {new Date(entry.date).toLocaleString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </div>
+
+              {/* Canvas Title */}
+              {view === 'edit' ? (
+                <input
+                  type="text"
+                  value={entry.title}
+                  onChange={(e) => onChange({ title: e.target.value })}
+                  onFocus={() => setInteracted(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      editorRef.current?.focus();
+                    }
+                  }}
+                  placeholder="Untitled Entry..."
+                  className="w-full text-3xl lg:text-4xl font-serif font-bold text-ink bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-muted/40 tracking-tight"
+                />
+              ) : (
+                <h1 className="text-3xl lg:text-4xl font-serif font-bold text-ink tracking-tight mb-0">
+                  {entry.title.trim() || 'Untitled Entry'}
+                </h1>
+              )}
+
+              {/* Tags Row */}
+              <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+                {entry.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs font-semibold px-2 py-0.5 bg-indigo-500/15 text-indigo-300 rounded-md flex items-center gap-1 group border border-indigo-500/20"
+                  >
+                    #{tag}
+                    {view === 'edit' && (
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="opacity-60 group-hover:opacity-100 hover:text-red-400 transition-opacity ml-0.5"
+                        title={`Remove #${tag}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+
+                {view === 'edit' && (
+                  <form onSubmit={addTag} className="relative inline-flex items-center">
+                    <input
+                      type="text"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="+ tag"
+                      className="text-xs bg-surface border border-line rounded-md px-2 py-0.5 text-muted focus:outline-none focus:border-indigo-500 focus:text-ink w-16 focus:w-24 transition-all"
+                    />
+                  </form>
+                )}
+              </div>
+
+              {/* Subtle divider */}
+              <div className="mt-6 border-b border-line/60" />
             </div>
   
             <AnimatePresence mode="wait">
@@ -654,29 +703,35 @@ Press [[ or @ to trigger card name suggestions instantly!"
                   exit={{ opacity: 0 }}
                   className="prose prose-slate prose-indigo max-w-none prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline"
                 >
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      a: ({ node, ...props }) => {
-                        const isCard = props.href?.startsWith('#card-');
-                        if (isCard) {
-                          const name = decodeURIComponent(props.href!.replace('#card-', ''));
-                          return (
-                            <span 
-                              className="card-mention cursor-pointer"
-                              onMouseEnter={() => setHoveredCardName(name)}
-                              onClick={() => setHoveredCardName(name)}
-                            >
-                              {props.children}
-                            </span>
-                          );
+                  {entry.content.trim() ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ node, ...props }) => {
+                          const isCard = props.href?.startsWith('#card-');
+                          if (isCard) {
+                            const name = decodeURIComponent(props.href!.replace('#card-', ''));
+                            return (
+                              <span 
+                                className="card-mention cursor-pointer"
+                                onMouseEnter={() => setHoveredCardName(name)}
+                                onClick={() => setHoveredCardName(name)}
+                              >
+                                {props.children}
+                              </span>
+                            );
+                          }
+                          return <a target="_blank" rel="noopener noreferrer" {...props} />;
                         }
-                        return <a target="_blank" rel="noopener noreferrer" {...props} />;
-                      }
-                    }}
-                  >
-                    {renderContent(entry.content)}
-                  </ReactMarkdown>
+                      }}
+                    >
+                      {renderContent(entry.content)}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="italic text-muted text-sm select-none">
+                      No content in this entry yet. Switch to Write mode to begin.
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

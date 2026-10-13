@@ -13,6 +13,7 @@ This platform helps you log your matches, document deck brews, discover new syne
 Reflective Sideboard provides a clean, text-based editor supporting standard Markdown formatting.
 
 * **Write & Preview**: Toggle between a distraction-free **Write** mode and a polished **Preview** mode to see how your Markdown renders.
+* **Document Canvas Layout**: Notes feature a clean paper canvas with the title, timestamp, and tags sitting at the top of the note. Toggling between Write and Preview maintains seamless visual alignment without layout jumps.
 * **Persistent Storage**: Your entries are automatically saved to your browser's local storage as you type, ensuring you never lose your theorycrafting notes.
 * **Document Statistics**: The footer area dynamically displays:
   * **Word Count**: Real-time counter of total words.
