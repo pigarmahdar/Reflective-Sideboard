@@ -24,15 +24,15 @@ Reflective Sideboard provides a clean, text-based editor supporting standard Mar
 
 Theorycrafting is enhanced through direct integration with the [Scryfall API](https://scryfall.com/).
 
-* **Instant Autocomplete**: While in **Write** mode, type `[[` or `@` followed by a card name to trigger an instant autocomplete suggestion panel. Press Enter to quickly insert the card link into your text.
-* **Card Previews**: In **Preview** mode, clicking or hovering over any card mention (e.g., `[[Black Lotus]]`) opens a dynamic sidebar providing full card details, including:
+* **Inline Floating Autocomplete**: While in **Write** mode, type `[[` or `@` followed by a card name to trigger an instant autocomplete popover directly beneath your cursor. The editor canvas stays stationary with zero layout shift. Press `↑`/`↓` and Enter to instantly insert the card link (`[[Card Name]] `).
+* **Card Previews**: In **Preview** mode, clicking or hovering over any card mention (e.g., `[[Black Lotus]]`) opens the inspector sidebar providing full card details, including:
   * High-resolution card art.
   * Mana cost, type line, and Oracle text.
   * Direct links to the official Scryfall database.
 
-### 3. Keyboard Shortcuts Support
+### 3. Keyboard Shortcuts & Writing Ergonomics
 
-To keep your hands on the keyboard and maintain flow state, Reflective Sideboard includes rich keyboard shortcuts. Press **`Cmd + /` or `Ctrl + /`** at any time to toggle the shortcuts guide overlay.
+To keep your hands on the keyboard and maintain flow state, Reflective Sideboard includes rich keyboard shortcuts and smart writing ergonomics. Press **`Cmd + /` or `Ctrl + /`** at any time to toggle the shortcuts guide overlay.
 
 #### System & Navigation
 
@@ -40,6 +40,12 @@ To keep your hands on the keyboard and maintain flow state, Reflective Sideboard
 * **Toggle Write & Preview**: `Cmd + P` or `Ctrl + P` (active while an entry is open — not on the empty screen).
 * **Save Flash / Force Sync**: `Cmd + S` or `Ctrl + S` (manually triggers a visual saving indicator).
 * **Toggle Shortcuts Guide**: `Cmd + /` or `Ctrl + /` (can also close with `Escape`).
+
+#### Writing Flow & Indentation
+
+* **Tab / Shift+Tab Indentation**: Pressing `Tab` inserts 2 soft spaces at the cursor or indents selected multi-line blocks; `Shift+Tab` cleanly outdents without losing editor focus.
+* **Automatic List Continuation**: Pressing `Enter` on a bulleted (`- `, `* `) or numbered (`1. `) list automatically continues the list with matching indentation or the next incremented number; pressing `Enter` on a blank list item gracefully exits the list.
+* **Comfortable Breathing Room**: The writing canvas features generous bottom scroll padding so the active writing line remains at eye level.
 
 #### Markdown Editor formatting (Text Selection Helpers)
 
@@ -51,7 +57,7 @@ To keep your hands on the keyboard and maintain flow state, Reflective Sideboard
 
 #### Predictive Autocomplete
 
-* **Trigger Panel**: Type `[[` or `@`.
+* **Trigger Popover**: Type `[[` or `@`.
 * **Navigate Predictions**: Use the Up and Down Arrow keys (`↑` / `↓`) and press `Enter` to select. Press `Escape` to close the predictions.
 
 ---

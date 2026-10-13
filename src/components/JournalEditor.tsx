@@ -23,6 +23,9 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { saveAs } from 'file-saver';
+import { getCaretCoordinates } from '../lib/caretPosition';
+import { computeTabIndentation, computeListContinuation } from '../lib/editorErgonomics';
+import { AutocompletePopover } from './AutocompletePopover';
 
 const ALL_PROMPTS = [
   // Match Reflection
@@ -68,6 +71,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionCursor, setSuggestionCursor] = useState(-1);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [interacted, setInteracted] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -145,6 +149,14 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
       const cursorPos = textarea.selectionStart || text.length;
       const textBeforeCursor = text.slice(0, cursorPos);
 
+      const updatePopoverPosition = () => {
+        const coords = getCaretCoordinates(textarea, cursorPos);
+        setPopoverPosition({
+          top: textarea.offsetTop + coords.top + coords.lineHeight + 4,
+          left: textarea.offsetLeft + coords.left,
+        });
+      };
+
       // Match [[ followed by any characters that are not closing braces or newlines
       const braceMatch = textBeforeCursor.match(/\[\[([^\]\n]*)$/);
       const atMatch = textBeforeCursor.match(/@(\S*)$/);
@@ -152,6 +164,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
       if (braceMatch) {
         const query = braceMatch[1];
         if (query.length >= 2) {
+          updatePopoverPosition();
           triggerAutocomplete(query);
         } else {
           setSuggestions([]);
@@ -164,6 +177,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
       } else if (atMatch) {
         const query = atMatch[1];
         if (query.length >= 2) {
+          updatePopoverPosition();
           triggerAutocomplete(query);
         } else {
           setSuggestions([]);
@@ -383,6 +397,49 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
       }
     }
 
+    // Tab indentation
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = editorRef.current;
+      if (!textarea) return;
+      const { newContent, newStart, newEnd } = computeTabIndentation(
+        entry.content,
+        textarea.selectionStart,
+        textarea.selectionEnd,
+        e.shiftKey
+      );
+      onChange({ content: newContent });
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+          editorRef.current.setSelectionRange(newStart, newEnd);
+        }
+      }, 0);
+      return;
+    }
+
+    // Enter list continuation
+    if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      const textarea = editorRef.current;
+      if (textarea) {
+        const continuation = computeListContinuation(entry.content, textarea.selectionStart);
+        if (continuation) {
+          e.preventDefault();
+          onChange({ content: continuation.newContent });
+          setTimeout(() => {
+            if (editorRef.current) {
+              editorRef.current.focus();
+              editorRef.current.setSelectionRange(
+                continuation.newCursorPos,
+                continuation.newCursorPos
+              );
+            }
+          }, 0);
+          return;
+        }
+      }
+    }
+
     // Markdown modifier shortcuts when typing in the textarea
     if (e.metaKey || e.ctrlKey) {
       const key = e.key.toLowerCase();
@@ -508,7 +565,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
 
       {/* Editor/Preview Area */}
       <div className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto p-6 lg:p-12 lg:px-24 relative selection:bg-indigo-500/40">
+        <div className="flex-1 overflow-y-auto p-6 lg:p-12 lg:px-24 pb-48 lg:pb-64 relative selection:bg-indigo-500/40">
           <div className="max-w-3xl mx-auto">
             <div className="mb-4 lg:mb-8">
               <div className="text-indigo-400 text-xs lg:text-sm font-mono mb-2 uppercase tracking-tighter">
@@ -580,6 +637,14 @@ Use standard markdown formatting for headers, lists, and links.
 Press [[ or @ to trigger card name suggestions instantly!"
                     className="w-full min-h-[150px] resize-none overflow-hidden bg-transparent focus:outline-none text-sm leading-relaxed text-body placeholder:text-muted"
                   />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <AutocompletePopover
+                      suggestions={suggestions}
+                      selectedIndex={suggestionCursor}
+                      position={popoverPosition}
+                      onSelect={handleApplySuggestion}
+                    />
+                  )}
                 </motion.div>
               ) : (
                 <motion.div 
@@ -618,64 +683,30 @@ Press [[ or @ to trigger card name suggestions instantly!"
           </div>
         </div>
         
-        {/* Card Sidebar */}
+        {/* Card Sidebar - active during preview mode */}
         <AnimatePresence initial={false}>
-          {(view === 'preview' || (view === 'edit' && showSuggestions && suggestions.length > 0)) && (
-            <>
-              <div
-                className={cn(
-                  "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-surface border-t md:border-t-0 md:border-l border-line z-30",
-                  "fixed md:static bottom-0 left-0 right-0 h-[60vh] md:h-auto rounded-t-2xl md:rounded-none"
-                )}
-                style={{
-                  width: window.innerWidth < 768 ? '100%' : 384,
-                  display: window.innerWidth < 768 && (view === 'preview' ? !hoveredCardName : !(showSuggestions && suggestions.length > 0)) ? 'none' : 'block'
-                }}
-              >
-                <div className="w-full md:w-[384px] h-full relative flex flex-col"> 
-                   {view === 'edit' ? (
-                     <div className="flex flex-col h-full bg-surface/50 pt-2">
-                        <div className="px-5 py-4 bg-surface-raised/20 border-b border-line flex items-center gap-2 shrink-0">
-                           <Sparkles className="w-4 h-4 text-indigo-400" />
-                           <span className="text-[10px] font-bold uppercase tracking-widest text-faint">Oracle Prediction</span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto w-full">
-                          {suggestions.map((s, i) => (
-                            <button
-                              key={s}
-                              onClick={() => handleApplySuggestion(s)}
-                              className={cn(
-                                "w-full text-left px-5 py-3 text-sm border-b border-line/50 last:border-0 transition-colors font-medium flex items-center justify-between",
-                                i === suggestionCursor
-                                  ? "bg-indigo-600 text-ink"
-                                  : "text-body hover:bg-surface-raised/50 hover:text-indigo-400"
-                              )}
-                            >
-                              {s}
-                              <Command className="w-3 h-3 opacity-30" />
-                            </button>
-                          ))}
-                        </div>
-                     </div>
-                   ) : (
-                     <CardSidebar cardName={hoveredCardName} />
-                   )}
-                   <button 
-                     onClick={() => {
-                       if (view === 'edit') {
-                         setShowSuggestions(false);
-                         setSuggestionCursor(-1);
-                       } else {
-                         setHoveredCardName(null);
-                       }
-                     }}
-                     className="md:hidden absolute top-4 right-4 p-2 bg-surface-raised/80 rounded-full text-faint hover:text-ink"
-                   >
-                     <X className="w-4 h-4" />
-                   </button>
-                </div>
+          {view === 'preview' && (
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden flex flex-col shadow-2xl bg-surface border-t md:border-t-0 md:border-l border-line z-30",
+                "fixed md:static bottom-0 left-0 right-0 h-[60vh] md:h-auto rounded-t-2xl md:rounded-none"
+              )}
+              style={{
+                width: window.innerWidth < 768 ? '100%' : 384,
+                display: window.innerWidth < 768 && !hoveredCardName ? 'none' : 'block'
+              }}
+            >
+              <div className="w-full md:w-[384px] h-full relative flex flex-col">
+                <CardSidebar cardName={hoveredCardName} />
+                <button 
+                  onClick={() => setHoveredCardName(null)}
+                  className="md:hidden absolute top-4 right-4 p-2 bg-surface-raised/80 rounded-full text-faint hover:text-ink"
+                  title="Close preview"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </>
+            </div>
           )}
         </AnimatePresence>
       </div>
