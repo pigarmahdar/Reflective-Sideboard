@@ -34,6 +34,9 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Build
         # PAGES_BASE must match the project-site path or assets 404 to a blank page.
         env:

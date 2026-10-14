@@ -60,27 +60,6 @@
     @apply font-sans leading-relaxed text-base text-body;
   }
 
-  /* Typography plugin: invert prose to light-on-dark only in dark theme.
-     Replaces the unconditional `prose-invert` class so markdown previews
-     stay readable on the light ground. */
-  :root[data-theme='dark'] .prose {
-    --tw-prose-body: var(--color-body);
-    --tw-prose-headings: var(--color-ink);
-    --tw-prose-lead: var(--color-faint);
-    --tw-prose-links: var(--color-accent-hover);
-    --tw-prose-bold: var(--color-ink);
-    --tw-prose-counters: var(--color-muted);
-    --tw-prose-bullets: var(--color-line-strong);
-    --tw-prose-hr: var(--color-line);
-    --tw-prose-quotes: var(--color-body);
-    --tw-prose-quote-borders: var(--color-line);
-    --tw-prose-captions: var(--color-muted);
-    --tw-prose-code: var(--color-ink);
-    --tw-prose-pre-code: var(--color-body);
-    --tw-prose-pre-bg: var(--color-surface);
-    --tw-prose-th-borders: var(--color-line-strong);
-    --tw-prose-td-borders: var(--color-line);
-  }
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
@@ -114,4 +93,28 @@
   .card-mention {
     @apply inline-block px-1 py-0.5 rounded-sm border-b border-indigo-400/30 text-indigo-400 font-bold cursor-help hover:bg-indigo-400/10 transition-colors;
   }
+}
+
+/* Typography plugin: invert prose to light-on-dark only in dark theme.
+   Replaces the unconditional `prose-invert` class so markdown previews
+   stay readable on the light ground.
+   Kept OUTSIDE any @layer: the plugin's `.prose-slate` vars live in the
+   utilities layer, which beats base-layer rules regardless of specificity. */
+:root[data-theme='dark'] .prose {
+  --tw-prose-body: var(--color-body);
+  --tw-prose-headings: var(--color-ink);
+  --tw-prose-lead: var(--color-faint);
+  --tw-prose-links: var(--color-accent-hover);
+  --tw-prose-bold: var(--color-ink);
+  --tw-prose-counters: var(--color-muted);
+  --tw-prose-bullets: var(--color-line-strong);
+  --tw-prose-hr: var(--color-line);
+  --tw-prose-quotes: var(--color-body);
+  --tw-prose-quote-borders: var(--color-line);
+  --tw-prose-captions: var(--color-muted);
+  --tw-prose-code: var(--color-ink);
+  --tw-prose-pre-code: var(--color-body);
+  --tw-prose-pre-bg: var(--color-surface);
+  --tw-prose-th-borders: var(--color-line-strong);
+  --tw-prose-td-borders: var(--color-line);
 }
