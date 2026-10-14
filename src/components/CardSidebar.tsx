@@ -20,14 +20,32 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({ cardName }) => {
   const [expanded, setExpanded] = useState(false);
   
   useEffect(() => {
+    let isCurrent = true;
+
     if (cardName) {
+      const cached = ScryfallService.getCachedCard(cardName);
+      if (cached) {
+        setCard(cached);
+        setLoading(false);
+        setExpanded(false);
+        return;
+      }
+
       setLoading(true);
       ScryfallService.getCardByName(cardName).then((data) => {
+        if (!isCurrent) return;
         setCard(data);
         setLoading(false);
         setExpanded(false);
       });
+    } else {
+      setCard(null);
+      setLoading(false);
     }
+
+    return () => {
+      isCurrent = false;
+    };
   }, [cardName]);
 
   const handleCopy = () => {

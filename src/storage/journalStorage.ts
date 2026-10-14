@@ -30,9 +30,63 @@ export interface StorageLoadResult<T> {
 
 export interface JournalStorage {
   loadEntries(): JournalLoadResult;
-  saveEntries(entries: JournalEntry[]): void;
+  saveEntries(entries: JournalEntry[]): boolean;
   loadTrash(): StorageLoadResult<TrashItem[]>;
-  saveTrash(trash: TrashItem[]): void;
+  saveTrash(trash: TrashItem[]): boolean;
+}
+
+export interface StorageSaveCoordinator {
+  schedule(entries: JournalEntry[], delayMs?: number): void;
+  flush(): boolean;
+  cancel(): void;
+  isPending(): boolean;
+}
+
+export function createDebouncedSaver(
+  saveFn: (entries: JournalEntry[]) => boolean,
+  defaultDelayMs: number = 300
+): StorageSaveCoordinator {
+  let timer: any = null;
+  let pendingEntries: JournalEntry[] | null = null;
+
+  return {
+    schedule(entries: JournalEntry[], delayMs: number = defaultDelayMs) {
+      pendingEntries = entries;
+      if (timer !== null) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        timer = null;
+        if (pendingEntries !== null) {
+          const toSave = pendingEntries;
+          pendingEntries = null;
+          saveFn(toSave);
+        }
+      }, delayMs);
+    },
+    flush(): boolean {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      if (pendingEntries !== null) {
+        const toSave = pendingEntries;
+        pendingEntries = null;
+        return saveFn(toSave);
+      }
+      return true;
+    },
+    cancel() {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      pendingEntries = null;
+    },
+    isPending(): boolean {
+      return pendingEntries !== null;
+    },
+  };
 }
 
 function getStorage(): Storage | null {
@@ -180,9 +234,10 @@ export const journalStorage: JournalStorage = {
     };
   },
 
-  saveEntries(entries: JournalEntry[]): void {
+  saveEntries(entries: JournalEntry[]): boolean {
     const storage = getStorage();
-    if (storage) writeJson(storage, CURRENT_ENTRIES_KEY, entries);
+    if (!storage) return false;
+    return writeJson(storage, CURRENT_ENTRIES_KEY, entries);
   },
 
   loadTrash(): StorageLoadResult<TrashItem[]> {
@@ -200,8 +255,9 @@ export const journalStorage: JournalStorage = {
     return { value: trash, status: Array.isArray(raw) && trash.length === 0 && raw.length > 0 ? 'invalid' : 'loaded' };
   },
 
-  saveTrash(trash: TrashItem[]): void {
+  saveTrash(trash: TrashItem[]): boolean {
     const storage = getStorage();
-    if (storage) writeJson(storage, TRASH_STORAGE_KEY, trash);
+    if (!storage) return false;
+    return writeJson(storage, TRASH_STORAGE_KEY, trash);
   },
 };

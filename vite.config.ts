@@ -12,6 +12,17 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-markdown': ['react-markdown', 'remark-gfm'],
+          'vendor-motion': ['motion'],
+          'vendor-utils': ['fuse.js', 'date-fns', 'file-saver'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
   },
   resolve: {
     alias: {

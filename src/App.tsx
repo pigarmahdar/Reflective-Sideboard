@@ -19,7 +19,7 @@ import { cn } from './lib/utils';
 import Fuse from 'fuse.js';
 import { saveAs } from 'file-saver';
 import { useTheme } from './hooks/useTheme';
-import { journalStorage, JournalMigrationStatus } from './storage/journalStorage';
+import { journalStorage, JournalMigrationStatus, createDebouncedSaver, StorageSaveCoordinator } from './storage/journalStorage';
 
 const BACKUP_SCHEMA_VERSION = 2;
 
@@ -60,7 +60,38 @@ export default function App() {
   const [trash, setTrash] = useState<TrashItem[]>(trashResult.value);
   // The entry just deleted, if any — drives the undo toast.
   const [lastDeleted, setLastDeleted] = useState<{ id: string; title: string } | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const isFirstRender = useRef(true);
+
+  const entrySaver = useRef<StorageSaveCoordinator | null>(null);
+  if (!entrySaver.current) {
+    entrySaver.current = createDebouncedSaver((toSave) => {
+      const ok = journalStorage.saveEntries(toSave);
+      if (!ok) setQuotaExceeded(true);
+      return ok;
+    }, 300);
+  }
+
+  // Ensure any pending save is immediately flushed if the tab is closed or hidden
+  useEffect(() => {
+    const flushSave = () => {
+      entrySaver.current?.flush();
+    };
+
+    window.addEventListener('beforeunload', flushSave);
+    window.addEventListener('pagehide', flushSave);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushSave();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('beforeunload', flushSave);
+      window.removeEventListener('pagehide', flushSave);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      flushSave();
+    };
+  }, []);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -106,9 +137,10 @@ export default function App() {
         e.preventDefault();
         handleCreateEntry();
       }
-      // Cmd+S / Ctrl+S for Save (prevent browser dialog, trigger visual save)
+      // Cmd+S / Ctrl+S for Save (prevent browser dialog, trigger visual save & immediate disk flush)
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
+        entrySaver.current?.flush();
         setIsSaving(true);
         setTimeout(() => setIsSaving(false), 800);
       }
@@ -117,14 +149,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Persistence — kept behind journalStorage so this component only manages
-  // application state, not browser-storage keys or serialization.
+  // Persistence — debounced through entrySaver so keystrokes remain 60fps non-blocking,
+  // with guaranteed flush on blur/unload/manual save.
   useEffect(() => {
-    journalStorage.saveEntries(entries);
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+    entrySaver.current?.schedule(entries);
     setIsSaving(true);
     const timer = setTimeout(() => {
       setIsSaving(false);
@@ -185,6 +217,7 @@ export default function App() {
    */
   const handleDeleteEntry = () => {
     if (!selectedId) return;
+    entrySaver.current?.flush();
     const entry = entries.find(e => e.id === selectedId);
     if (!entry) return;
 
@@ -222,6 +255,7 @@ export default function App() {
    * `recentlyDeleted` key so nothing is silently dropped.
    */
   const handleBackup = () => {
+    entrySaver.current?.flush();
     const payload = {
       schemaVersion: BACKUP_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
@@ -284,6 +318,9 @@ export default function App() {
         );
         if (!ok) return;
 
+        entrySaver.current?.cancel();
+        journalStorage.saveEntries(normalised);
+        journalStorage.saveTrash(normalisedTrash);
         setEntries(normalised);
         setTrash(normalisedTrash);
         setLastDeleted(null);
@@ -384,18 +421,27 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {storageNotice && (
+      {(storageNotice || quotaExceeded) && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-4 right-4 z-50 max-w-sm rounded-lg border border-line bg-surface px-4 py-3 text-xs text-body shadow-xl"
+          className="fixed top-4 right-4 z-50 max-w-sm rounded-lg border border-line bg-surface px-4 py-3 text-xs text-body shadow-xl flex items-center justify-between gap-3"
         >
-          {storageNotice}
+          <span>{quotaExceeded ? 'Browser storage is full! Please export a library backup.' : storageNotice}</span>
+          {quotaExceeded && (
+            <button
+              onClick={() => setQuotaExceeded(false)}
+              className="text-muted hover:text-ink font-bold text-sm px-1"
+              aria-label="Dismiss warning"
+            >
+              ✕
+            </button>
+          )}
         </div>
       )}
 
-      {/* Decorative Texture Overlays */}
-      <div className="fixed inset-0 pointer-events-none hidden [&:where(:root[data-theme=dark]_*)]:block opacity-[0.02] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/felt.png')]"></div>
+      {/* Decorative Texture Overlays - offline friendly SVG pattern */}
+      <div className="fixed inset-0 pointer-events-none hidden [&:where(:root[data-theme=dark]_*)]:block opacity-[0.03] bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
       {/* Undo toast for soft-deleted entries — rendered outside the flex
           layout so it isn't clipped by the overflow-hidden containers. */}
