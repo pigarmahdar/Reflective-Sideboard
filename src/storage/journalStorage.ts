@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { JournalEntry, TrashItem } from '../types.ts';
+import type { JournalEntry, TrashItem, ConsideredCard } from '../types.ts';
 
 export const LEGACY_ENTRIES_KEY = 'spellbook_journal_entries';
 export const CURRENT_ENTRIES_KEY = 'sideboard:v1:entries';
 export const TRASH_STORAGE_KEY = 'sideboard:v1:trash';
+export const CONSIDERED_STORAGE_KEY = 'sideboard:v1:considered_cards';
 
 export type JournalMigrationStatus =
   | 'canonical'
@@ -33,6 +34,8 @@ export interface JournalStorage {
   saveEntries(entries: JournalEntry[]): boolean;
   loadTrash(): StorageLoadResult<TrashItem[]>;
   saveTrash(trash: TrashItem[]): boolean;
+  loadConsideredCards(): StorageLoadResult<ConsideredCard[]>;
+  saveConsideredCards(cards: ConsideredCard[]): boolean;
 }
 
 export interface StorageSaveCoordinator {
@@ -167,6 +170,25 @@ function normalizeTrash(value: unknown): TrashItem[] {
   });
 }
 
+function normalizeConsideredCards(value: unknown): ConsideredCard[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((candidate): ConsideredCard[] => {
+    if (!isRecord(candidate) || typeof candidate.name !== 'string' || !candidate.name.trim()) {
+      return [];
+    }
+    return [{
+      id: typeof candidate.id === 'string' && candidate.id ? candidate.id : String(Date.now()),
+      name: candidate.name.trim(),
+      mana_cost: typeof candidate.mana_cost === 'string' ? candidate.mana_cost : undefined,
+      type_line: typeof candidate.type_line === 'string' ? candidate.type_line : undefined,
+      image_uri: typeof candidate.image_uri === 'string' ? candidate.image_uri : undefined,
+      scryfall_uri: typeof candidate.scryfall_uri === 'string' ? candidate.scryfall_uri : undefined,
+      sleevedAt: typeof candidate.sleevedAt === 'string' && candidate.sleevedAt ? candidate.sleevedAt : new Date().toISOString(),
+    }];
+  });
+}
+
 function writeJson(storage: Storage, key: string, value: unknown): boolean {
   try {
     storage.setItem(key, JSON.stringify(value));
@@ -177,7 +199,7 @@ function writeJson(storage: Storage, key: string, value: unknown): boolean {
 }
 
 /**
- * Browser-storage repository for journal entries and trash.
+ * Browser-storage repository for journal entries, trash, and considered cards.
  *
  * The entries key is namespaced and versioned (`sideboard:v1:entries`). On
  * first load, a valid legacy `spellbook_journal_entries` payload is copied to
@@ -259,5 +281,26 @@ export const journalStorage: JournalStorage = {
     const storage = getStorage();
     if (!storage) return false;
     return writeJson(storage, TRASH_STORAGE_KEY, trash);
+  },
+
+  loadConsideredCards(): StorageLoadResult<ConsideredCard[]> {
+    const storage = getStorage();
+    if (!storage) {
+      return { value: [], status: 'storage-unavailable' };
+    }
+
+    const raw = readJson(storage, CONSIDERED_STORAGE_KEY);
+    if (raw === undefined) {
+      return { value: [], status: 'missing' };
+    }
+
+    const cards = normalizeConsideredCards(raw);
+    return { value: cards, status: Array.isArray(raw) && cards.length === 0 && raw.length > 0 ? 'invalid' : 'loaded' };
+  },
+
+  saveConsideredCards(cards: ConsideredCard[]): boolean {
+    const storage = getStorage();
+    if (!storage) return false;
+    return writeJson(storage, CONSIDERED_STORAGE_KEY, cards);
   },
 };

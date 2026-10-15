@@ -171,6 +171,27 @@ test('loads and saves trash through the storage boundary', () => {
   assert.deepEqual(journalStorage.loadTrash().value, trash);
 });
 
+test('loads and saves considered cards through the storage boundary', () => {
+  const data = new Map<string, string>();
+  installStorage({ data });
+
+  const cards = [{
+    id: 'card-1',
+    name: 'Counterspell',
+    mana_cost: '{U}{U}',
+    type_line: 'Instant',
+    image_uri: 'https://example.com/counterspell.jpg',
+    scryfall_uri: 'https://scryfall.com/card/1',
+    sleevedAt: '2026-03-02T00:00:00.000Z',
+  }];
+
+  journalStorage.saveConsideredCards(cards);
+
+  const loaded = journalStorage.loadConsideredCards();
+  assert.equal(loaded.status, 'loaded');
+  assert.deepEqual(loaded.value, cards);
+});
+
 test('returns an empty library when browser storage is unavailable', () => {
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,

@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { JournalEntry } from '../types';
+import { JournalEntry, ConsideredCard, MTGCard } from '../types';
 import { CardSidebar } from './CardSidebar';
 import { ScryfallService } from '../services/scryfall';
 import { 
@@ -62,9 +62,21 @@ interface JournalEditorProps {
   onDelete: () => void;
   onOpenSidebar: () => void;
   isSaving?: boolean;
+  consideredCards?: ConsideredCard[];
+  onToggleConsideredCard?: (card: MTGCard) => void;
+  activeInspectCard?: string | null;
 }
 
-export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, onDelete, onOpenSidebar, isSaving = false }) => {
+export const JournalEditor: React.FC<JournalEditorProps> = ({ 
+  entry, 
+  onChange, 
+  onDelete, 
+  onOpenSidebar, 
+  isSaving = false,
+  consideredCards = [],
+  onToggleConsideredCard,
+  activeInspectCard = null,
+}) => {
   const [view, setView] = useState<'edit' | 'preview'>('edit');
   const [hoveredCardName, setHoveredCardName] = useState<string | null>(null);
   const [newTag, setNewTag] = useState('');
@@ -78,6 +90,15 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({ entry, onChange, o
   const contentRef = useRef(entry.content);
   const abortControllerRef = useRef<AbortController | null>(null);
   const autocompleteTimeoutRef = useRef<number | null>(null);
+
+  // When activeInspectCard changes from outside (e.g. clicking from Consideration shelf),
+  // switch to preview and inspect the card
+  useEffect(() => {
+    if (activeInspectCard) {
+      setView('preview');
+      setHoveredCardName(activeInspectCard);
+    }
+  }, [activeInspectCard]);
 
   // Sync ref so event handlers always read the latest content without re-triggering effects
   useEffect(() => {
@@ -752,7 +773,16 @@ Press [[ or @ to trigger card name suggestions instantly!"
               }}
             >
               <div className="w-full md:w-[384px] h-full relative flex flex-col">
-                <CardSidebar cardName={hoveredCardName} />
+                <CardSidebar 
+                  cardName={hoveredCardName} 
+                  isConsidered={Boolean(
+                    hoveredCardName &&
+                    consideredCards.some(
+                      (c) => c.name.toLowerCase() === hoveredCardName.toLowerCase()
+                    )
+                  )}
+                  onToggleConsidered={onToggleConsideredCard}
+                />
                 <button 
                   onClick={() => setHoveredCardName(null)}
                   className="md:hidden absolute top-4 right-4 p-2 bg-surface-raised/80 rounded-full text-faint hover:text-ink"

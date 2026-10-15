@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { JournalEditor } from './components/JournalEditor';
 import { UndoToast } from './components/UndoToast';
-import { JournalEntry, TrashItem } from './types';
+import { JournalEntry, TrashItem, ConsideredCard, MTGCard } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, BookOpen, Menu } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -58,6 +58,10 @@ export default function App() {
   // Soft-deleted entries awaiting either "Put back" or permanent removal.
   const [trashResult] = useState(() => journalStorage.loadTrash());
   const [trash, setTrash] = useState<TrashItem[]>(trashResult.value);
+  // Considered / sleeved cards library
+  const [consideredResult] = useState(() => journalStorage.loadConsideredCards());
+  const [consideredCards, setConsideredCards] = useState<ConsideredCard[]>(consideredResult.value);
+  const [inspectCard, setInspectCard] = useState<string | null>(null);
   // The entry just deleted, if any — drives the undo toast.
   const [lastDeleted, setLastDeleted] = useState<{ id: string; title: string } | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
@@ -243,6 +247,45 @@ export default function App() {
     if (lastDeleted?.id === id) setLastDeleted(null);
   };
 
+  const handleToggleConsidered = (card: MTGCard) => {
+    setConsideredCards(prev => {
+      const exists = prev.some(c => c.name.toLowerCase() === card.name.toLowerCase());
+      let updated: ConsideredCard[];
+      if (exists) {
+        updated = prev.filter(c => c.name.toLowerCase() !== card.name.toLowerCase());
+      } else {
+        const newCard: ConsideredCard = {
+          id: card.id || String(Date.now()),
+          name: card.name,
+          mana_cost: card.mana_cost,
+          type_line: card.type_line,
+          image_uri: card.image_uris?.normal,
+          scryfall_uri: card.scryfall_uri,
+          sleevedAt: new Date().toISOString(),
+        };
+        updated = [newCard, ...prev];
+      }
+      journalStorage.saveConsideredCards(updated);
+      return updated;
+    });
+  };
+
+  const handleRemoveConsidered = (cardName: string) => {
+    setConsideredCards(prev => {
+      const updated = prev.filter(c => c.name.toLowerCase() !== cardName.toLowerCase());
+      journalStorage.saveConsideredCards(updated);
+      return updated;
+    });
+  };
+
+  const handleSelectConsideredCard = (cardName: string) => {
+    setInspectCard(cardName);
+    if (!selectedId && entries.length > 0) {
+      setSelectedId(entries[0].id);
+    }
+    setIsSidebarOpen(false);
+  };
+
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
@@ -356,6 +399,9 @@ export default function App() {
         trash={trash}
         onPutBack={handlePutBack}
         onDeleteForever={handleTrashEntry}
+        consideredCards={consideredCards}
+        onSelectCard={handleSelectConsideredCard}
+        onRemoveConsideredCard={handleRemoveConsidered}
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -374,6 +420,9 @@ export default function App() {
                 onDelete={handleDeleteEntry}
                 onOpenSidebar={() => setIsSidebarOpen(true)}
                 isSaving={isSaving}
+                consideredCards={consideredCards}
+                onToggleConsideredCard={handleToggleConsidered}
+                activeInspectCard={inspectCard}
               />
             </motion.div>
           ) : (

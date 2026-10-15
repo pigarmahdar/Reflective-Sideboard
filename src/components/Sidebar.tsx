@@ -4,9 +4,9 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { JournalEntry, TrashItem } from '../types';
+import { JournalEntry, TrashItem, ConsideredCard } from '../types';
 import { cn, formatDate, getRelativeTime } from '../lib/utils';
-import { Plus, Search, BookOpen, X, ArchiveRestore, Upload, Trash2, Undo2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, BookOpen, X, ArchiveRestore, Upload, Trash2, Undo2, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ThemeToggle } from './ThemeToggle';
 import type { Theme } from '../hooks/useTheme';
@@ -30,6 +30,9 @@ interface SidebarProps {
   trash: TrashItem[];
   onPutBack: (id: string) => void;
   onDeleteForever: (id: string) => void;
+  consideredCards?: ConsideredCard[];
+  onSelectCard?: (cardName: string) => void;
+  onRemoveConsideredCard?: (cardName: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -50,13 +53,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRestore,
   trash,
   onPutBack,
-  onDeleteForever
+  onDeleteForever,
+  consideredCards = [],
+  onSelectCard,
+  onRemoveConsideredCard,
 }) => {
   // Hidden file input so restore is a native picker rather than a drag-and-drop surface
   const restoreInputRef = useRef<HTMLInputElement>(null);
   // Recently Deleted section is collapsed by default so it never clutters the
   // default view, but stays visible enough that users know it's there.
   const [isTrashOpen, setIsTrashOpen] = useState(false);
+  const [isConsideredOpen, setIsConsideredOpen] = useState(true);
 
   return (
     <>
@@ -162,6 +169,79 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Considered Cards Library — cards sleeved from preview inspection */}
+        {consideredCards && consideredCards.length > 0 && (
+          <div className="px-6 pb-4 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsConsideredOpen(prev => !prev)}
+              aria-expanded={isConsideredOpen}
+              className="w-full inline-flex items-center justify-between gap-2 text-[10px] uppercase tracking-widest text-muted font-bold hover:text-ink transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+                Considered Cards
+                <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/20 text-[10px] font-mono text-indigo-400 dark:text-indigo-300">
+                  {consideredCards.length}
+                </span>
+              </span>
+              {isConsideredOpen ? (
+                <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isConsideredOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 space-y-1 max-h-40 overflow-y-auto pr-1">
+                    {consideredCards.map((card) => (
+                      <div
+                        key={card.id || card.name}
+                        onClick={() => onSelectCard?.(card.name)}
+                        className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 bg-surface-raised/40 hover:bg-surface-raised/80 cursor-pointer transition-colors border border-transparent hover:border-line"
+                        title={`Inspect ${card.name}`}
+                      >
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                          <span className="text-xs text-body truncate group-hover:text-ink font-medium">
+                            {card.name}
+                          </span>
+                          {card.mana_cost && (
+                            <span className="text-[10px] font-mono text-muted shrink-0">
+                              {card.mana_cost}
+                            </span>
+                          )}
+                        </div>
+                        {onRemoveConsideredCard && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveConsideredCard(card.name);
+                            }}
+                            title="Remove from consideration"
+                            aria-label={`Remove ${card.name} from consideration`}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted hover:text-red-400 hover:bg-surface-overlay/50 transition-all shrink-0"
+                          >
+                            <X className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Recently Deleted — kept above the footer so it's easy to find,
             collapsed by default to keep the sidebar uncluttered. */}

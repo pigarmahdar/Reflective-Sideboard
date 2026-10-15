@@ -43,3 +43,16 @@ export interface TrashItem {
   /** ISO timestamp of when the entry was soft-deleted. */
   deletedAt: string;
 }
+
+/**
+ * A card sleeved and saved into the user's Consideration Library.
+ */
+export interface ConsideredCard {
+  id: string;
+  name: string;
+  mana_cost?: string;
+  type_line?: string;
+  image_uri?: string;
+  scryfall_uri?: string;
+  sleevedAt: string; // ISO string
+}
