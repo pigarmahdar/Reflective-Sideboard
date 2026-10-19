@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { JournalEntry, TrashItem, ConsideredCard } from '../types';
 import { cn, formatDate, getRelativeTime } from '../lib/utils';
 import { Plus, Search, BookOpen, X, ArchiveRestore, Upload, Trash2, Undo2, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
@@ -65,6 +65,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isTrashOpen, setIsTrashOpen] = useState(false);
   const [isConsideredOpen, setIsConsideredOpen] = useState(true);
 
+  // The drawer is the only way to reach entries on mobile; Escape should
+  // close it the same way the overlay and the ✕ button do.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   return (
     <>
       {/* Mobile overlay */}
@@ -80,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </AnimatePresence>
 
-      <aside className={cn(
+      <aside id="journal-sidebar" className={cn(
         "fixed md:static inset-y-0 left-0 z-50 w-72 bg-paper md:bg-surface/50 border-r border-line flex flex-col h-screen shrink-0 transform transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
@@ -95,16 +106,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-accent-strong font-medium">Sideboard</span>
               </h1>
             </div>
-            <button onClick={onClose} className="md:hidden text-faint hover:text-ink">
-              <X className="w-5 h-5" />
+            <button onClick={onClose} className="md:hidden text-faint hover:text-ink" aria-label="Close sidebar">
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
           <div className="relative group mb-6 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-accent transition-colors" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-accent transition-colors" aria-hidden="true" />
             <input 
-              type="text"
+              type="search"
               placeholder="Search entries..."
+              aria-label="Search entries"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-surface-raised/50 border border-line rounded-lg py-2 pl-10 pr-4 text-xs text-body focus:ring-1 focus:ring-accent/50 outline-none transition-all placeholder:text-muted"
@@ -116,14 +128,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {tags.length > 0 && (
               <div className="shrink-0">
                 <label className="text-[10px] uppercase tracking-widest text-muted font-bold mb-3 block">Filter by Tags</label>
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
+                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1" role="group" aria-label="Filter by tags">
                   {tags.map(tag => (
                     <button
                       key={tag}
                       type="button"
                       onClick={() => onToggleTag(tag)}
+                      aria-pressed={selectedTags.includes(tag)}
                       className={cn(
-                        "px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1",
+                        "px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
                         selectedTags.includes(tag) 
                           ? "bg-accent text-white" 
                           : "bg-surface-raised text-body hover:bg-surface-overlay hover:text-ink"
@@ -138,8 +151,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Entries Section */}
             <div className="flex-1 flex flex-col min-h-0">
-              <label className="text-[10px] uppercase tracking-widest text-muted font-bold mb-3 block shrink-0">Recent Entries</label>
-              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-1">
+              <div className="flex items-baseline justify-between mb-3 shrink-0">
+                <label className="text-[10px] uppercase tracking-widest text-muted font-bold block">Recent Entries</label>
+                {/* Announced politely so filtering by typing is not silent for screen readers. */}
+                <span role="status" aria-live="polite" className="text-[10px] font-mono text-faint">
+                  {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-1" role="list">
                 {entries.length === 0 ? (
                   <div className="py-4 px-2">
                     <p className="text-xs text-muted italic">No entries found.</p>
@@ -148,9 +167,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   entries.map((entry) => (
                     <button
                       key={entry.id}
+                      role="listitem"
+                      aria-current={selectedId === entry.id ? 'true' : undefined}
                       onClick={() => onSelect(entry.id)}
                       className={cn(
-                        "w-full text-left p-3 rounded-md transition-all group",
+                        "w-full text-left p-3 rounded-md transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
                         selectedId === entry.id 
                           ? "bg-indigo-600/10 border-l-2 border-indigo-500 rounded-r-md text-accent-strong"
                           : "hover:bg-surface-raised/50 text-body hover:text-ink"
@@ -206,11 +227,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {consideredCards.map((card) => (
                       <div
                         key={card.id || card.name}
-                        onClick={() => onSelectCard?.(card.name)}
-                        className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 bg-surface-raised/40 hover:bg-surface-raised/80 cursor-pointer transition-colors border border-transparent hover:border-line"
-                        title={`Inspect ${card.name}`}
+                        className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 bg-surface-raised/40 hover:bg-surface-raised/80 transition-colors border border-transparent hover:border-line"
                       >
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectCard?.(card.name)}
+                          title={`Inspect ${card.name}`}
+                          className="flex-1 min-w-0 flex items-center gap-1.5 text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                        >
                           <span className="text-xs text-body truncate group-hover:text-ink font-medium">
                             {card.name}
                           </span>
@@ -219,17 +243,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               {card.mana_cost}
                             </span>
                           )}
-                        </div>
+                        </button>
                         {onRemoveConsideredCard && (
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRemoveConsideredCard(card.name);
-                            }}
-                            title="Remove from consideration"
+                            onClick={() => onRemoveConsideredCard(card.name)}
                             aria-label={`Remove ${card.name} from consideration`}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted hover:text-red-400 hover:bg-surface-overlay/50 transition-all shrink-0"
+                            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 rounded text-muted hover:text-red-400 hover:bg-surface-overlay/50 transition-all shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                           >
                             <X className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
@@ -290,22 +310,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {formatDate(entry.date)} · deleted {getRelativeTime(deletedAt)}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={() => onPutBack(entry.id)}
-                            title="Put back to library"
                             aria-label={`Put back ${entry.title || 'Untitled Entry'}`}
-                            className="p-1 rounded text-muted hover:text-accent-strong hover:bg-surface-overlay/50 transition-colors"
+                            className="p-1 rounded text-muted hover:text-accent-strong hover:bg-surface-overlay/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                           >
                             <Undo2 className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
                           <button
                             type="button"
                             onClick={() => onDeleteForever(entry.id)}
-                            title="Delete permanently"
                             aria-label={`Delete ${entry.title || 'Untitled Entry'} permanently`}
-                            className="p-1 rounded text-muted hover:text-red-400 hover:bg-surface-overlay/50 transition-colors"
+                            className="p-1 rounded text-muted hover:text-red-400 hover:bg-surface-overlay/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                           >
                             <X className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>

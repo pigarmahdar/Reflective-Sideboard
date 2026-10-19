@@ -92,6 +92,8 @@
 
   .card-mention {
     @apply inline-block px-1 py-0.5 rounded-sm border-b border-indigo-400/30 text-indigo-400 font-bold cursor-help hover:bg-indigo-400/10 transition-colors;
+    /* Card mentions are keyboard-focusable spans, so they need their own ring. */
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60;
   }
 }
 

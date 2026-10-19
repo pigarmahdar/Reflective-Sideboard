@@ -299,17 +299,19 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full h-full flex flex-col shrink-0 overflow-hidden">
+    <aside aria-label="Card preview" className="w-full h-full flex flex-col shrink-0 overflow-hidden">
       <div className="p-4 border-b border-line bg-surface/50">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Card Preview</h3>
+          <span role="status" aria-live="polite" className="sr-only">{copied ? 'Card text copied to clipboard' : ''}</span>
           {card && (
             <button
               onClick={handleCopy}
-              className="text-muted hover:text-indigo-400 transition-colors"
+              className="text-muted hover:text-indigo-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 rounded"
               title="Copy card text"
+              aria-label={copied ? 'Card text copied' : 'Copy card text'}
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
             </button>
           )}
         </div>
@@ -320,7 +322,7 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-[9px] text-accent-mid/80 font-bold uppercase tracking-widest hover:text-accent-mid transition-colors mt-2"
           >
-            Scryfall Database <ExternalLink className="w-3 h-3" />
+            Scryfall Database <ExternalLink className="w-3 h-3" aria-hidden="true" />
           </a>
         )}
       </div>
@@ -328,13 +330,13 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({
         {!cardName && !card ? (
           <div className="flex flex-col items-center justify-center p-8 text-center text-muted mt-20">
             <div className="w-16 h-16 bg-surface-raised/50 rounded-xl flex items-center justify-center mb-4">
-              <ImageIcon className="w-8 h-8 opacity-40" />
+              <ImageIcon className="w-8 h-8 opacity-40" aria-hidden="true" />
             </div>
             <p className="text-xs font-medium leading-relaxed">Hover over a card mention in preview to view it here.</p>
           </div>
         ) : loading ? (
-          <div className="flex justify-center flex-col items-center h-48 mt-20">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-4" />
+          <div role="status" className="flex justify-center flex-col items-center h-48 mt-20">
+            <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-4" aria-hidden="true" />
             <span className="text-xs font-medium text-muted uppercase tracking-wider">Locating...</span>
           </div>
         ) : card ? (
@@ -358,7 +360,7 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({
                       className="w-[80%] max-w-[240px] mx-auto mt-4 mb-6 flex items-center justify-between bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-1.5 shadow-sm"
                     >
                       <div className="flex items-center gap-1.5 text-xs text-indigo-400 dark:text-indigo-300 font-medium">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" />
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0 animate-pulse" aria-hidden="true" />
                         <span className="truncate">In Consideration</span>
                       </div>
                       <button
@@ -401,15 +403,16 @@ export const CardSidebar: React.FC<CardSidebarProps> = ({
                 {card.oracle_text && card.oracle_text.length > 100 && (
                   <button
                     onClick={() => setExpanded(!expanded)}
-                    className="mt-3 flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-accent-mid hover:text-accent-strong transition-colors w-fit"
+                    aria-expanded={expanded}
+                    className="mt-3 flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-accent-mid hover:text-accent-strong transition-colors w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 rounded"
                   >
                     {expanded ? (
                       <>
-                        Collapse <ChevronUp className="w-3 h-3" />
+                        Collapse <ChevronUp className="w-3 h-3" aria-hidden="true" />
                       </>
                     ) : (
                       <>
-                        Read Full Oracle <ChevronDown className="w-3 h-3" />
+                        Read Full Oracle <ChevronDown className="w-3 h-3" aria-hidden="true" />
                       </>
                     )}
                   </button>

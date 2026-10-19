@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { saveAs } from 'file-saver';
 import { getCaretCoordinates } from '../lib/caretPosition';
 import { computeTabIndentation, computeListContinuation } from '../lib/editorErgonomics';
+import { useIsCompact } from '../hooks/useMediaQuery';
 import { AutocompletePopover } from './AutocompletePopover';
 
 const ALL_PROMPTS = [
@@ -86,6 +87,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [interacted, setInteracted] = useState(false);
+  const isCompact = useIsCompact();
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef(entry.content);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -521,9 +523,9 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
           <button 
             onClick={onOpenSidebar}
             className="md:hidden p-1.5 text-faint hover:text-ink rounded-lg border border-line bg-surface"
-            title="Open Sidebar"
+            aria-label="Open sidebar"
           >
-            <Menu className="w-4 h-4" />
+            <Menu className="w-4 h-4" aria-hidden="true" />
           </button>
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-muted min-w-0">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/80 shrink-0" />
@@ -534,34 +536,36 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="bg-surface/50 p-1 rounded-lg flex items-center border border-line backdrop-blur-sm self-center">
+          <div className="bg-surface/50 p-1 rounded-lg flex items-center border border-line backdrop-blur-sm self-center" role="group" aria-label="Editor view">
              <button 
                onClick={() => setView('edit')}
+               aria-pressed={view === 'edit'}
                className={cn(
                  "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
-                 view === 'edit' ? "bg-indigo-600 shadow-sm text-ink" : "text-muted hover:text-faint"
+                 view === 'edit' ? "bg-indigo-600 shadow-sm text-white" : "text-muted hover:text-faint"
                )}
              >
-               <Edit3 className="w-3.5 h-3.5" /> Write
+               <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Write
              </button>
              <button 
                onClick={() => setView('preview')}
+               aria-pressed={view === 'preview'}
                className={cn(
                  "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all",
-                 view === 'preview' ? "bg-indigo-600 shadow-sm text-ink" : "text-muted hover:text-faint"
+                 view === 'preview' ? "bg-indigo-600 shadow-sm text-white" : "text-muted hover:text-faint"
                )}
              >
-               <Eye className="w-3.5 h-3.5" /> Preview
+               <Eye className="w-3.5 h-3.5" aria-hidden="true" /> Preview
              </button>
           </div>
 
           <div className="h-4 w-px bg-line mx-0.5" />
 
-          <button onClick={handleExport} className="btn-icon" title="Export Markdown">
-            <Download className="w-4 h-4" />
+          <button onClick={handleExport} className="btn-icon" title="Export Markdown" aria-label="Export entry as Markdown">
+            <Download className="w-4 h-4" aria-hidden="true" />
           </button>
-          <button onClick={onDelete} className="btn-icon hover:text-red-400" title="Delete Entry">
-            <Trash2 className="w-4 h-4" />
+          <button onClick={onDelete} className="btn-icon hover:text-red-400" title="Delete Entry" aria-label="Delete entry">
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -597,6 +601,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     }
                   }}
                   placeholder="Untitled Entry..."
+                  aria-label="Entry title"
                   className="w-full text-3xl lg:text-4xl font-serif font-bold text-ink bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-muted/40 tracking-tight"
                 />
               ) : (
@@ -633,6 +638,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       placeholder="+ tag"
+                      aria-label="Add a tag"
                       className="text-xs bg-surface border border-line rounded-md px-2 py-0.5 text-muted focus:outline-none focus:border-indigo-500 focus:text-ink w-16 focus:w-24 transition-all"
                     />
                   </form>
@@ -702,6 +708,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     onChange={(e) => onChange({ content: e.target.value })}
                     onFocus={() => setInteracted(true)}
                     onKeyDown={handleKeyDown}
+                    aria-label="Entry content"
                     placeholder="# Start writing...
 Use standard markdown formatting for headers, lists, and links.
 Press [[ or @ to trigger card name suggestions instantly!"
@@ -735,8 +742,18 @@ Press [[ or @ to trigger card name suggestions instantly!"
                             return (
                               <span 
                                 className="card-mention cursor-pointer"
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Inspect card ${name}`}
                                 onMouseEnter={() => setHoveredCardName(name)}
                                 onClick={() => setHoveredCardName(name)}
+                                onFocus={() => setHoveredCardName(name)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setHoveredCardName(name);
+                                  }
+                                }}
                               >
                                 {props.children}
                               </span>
@@ -768,8 +785,8 @@ Press [[ or @ to trigger card name suggestions instantly!"
                 "fixed md:static bottom-0 left-0 right-0 h-[60vh] md:h-auto rounded-t-2xl md:rounded-none"
               )}
               style={{
-                width: window.innerWidth < 768 ? '100%' : 384,
-                display: window.innerWidth < 768 && !hoveredCardName ? 'none' : 'block'
+                width: isCompact ? '100%' : 384,
+                display: isCompact && !hoveredCardName ? 'none' : 'block'
               }}
             >
               <div className="w-full md:w-[384px] h-full relative flex flex-col">
@@ -786,9 +803,9 @@ Press [[ or @ to trigger card name suggestions instantly!"
                 <button 
                   onClick={() => setHoveredCardName(null)}
                   className="md:hidden absolute top-4 right-4 p-2 bg-surface-raised/80 rounded-full text-faint hover:text-ink"
-                  title="Close preview"
+                  aria-label="Close card preview"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -805,14 +822,15 @@ Press [[ or @ to trigger card name suggestions instantly!"
         <div className="flex items-center space-x-2 lg:space-x-4">
           <button 
             onClick={() => setShowShortcuts(true)}
-            className="flex items-center gap-1 hover:text-indigo-400 transition-colors py-1 cursor-pointer mr-2 text-muted font-medium"
+            className="flex items-center gap-1 hover:text-indigo-400 transition-colors py-1 cursor-pointer mr-2 text-muted font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 rounded"
+            aria-haspopup="dialog"
             title="Keyboard Shortcuts Guide (Ctrl+/)"
           >
-            <Command className="w-3 h-3 text-accent-mid" />
+            <Command className="w-3 h-3 text-accent-mid" aria-hidden="true" />
             <span className="text-[9px] lg:text-[10px]">Shortcuts</span>
           </button>
           <span className="text-line-strong">|</span>
-          <span className="flex items-center space-x-1.5 font-medium transition-all duration-300">
+          <span role="status" aria-live="polite" className="flex items-center space-x-1.5 font-medium transition-all duration-300">
             {isSaving ? (
               <>
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
@@ -845,17 +863,21 @@ Press [[ or @ to trigger card name suggestions instantly!"
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="shortcuts-title"
               className="bg-surface border border-line rounded-xl max-w-sm md:max-w-md w-full p-6 shadow-2xl relative"
             >
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="absolute top-4 right-4 p-1.5 bg-surface-raised hover:bg-surface-overlay rounded-full text-muted hover:text-ink transition-colors"
+                aria-label="Close shortcuts guide"
+                className="absolute top-4 right-4 p-1.5 bg-surface-raised hover:bg-surface-overlay rounded-full text-muted hover:text-ink transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
               <div className="flex items-center gap-2 mb-5">
-                <Command className="w-5 h-5 text-accent-mid" />
-                <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Keyboard Shortcuts Guide</h3>
+                <Command className="w-5 h-5 text-accent-mid" aria-hidden="true" />
+                <h3 id="shortcuts-title" className="text-sm font-bold text-ink uppercase tracking-wider">Keyboard Shortcuts Guide</h3>
               </div>
               <div className="space-y-5">
                 <div>

@@ -118,10 +118,16 @@ Rather than displaying a stark blank canvas, Reflective Sideboard introduces a d
 *   **Reduced Motion**: `prefers-reduced-motion` collapses ambient animations and transitions.
 
 ### 7. Library Backup and Restore
-*   **Full-Archive Export**: One click writes the entire journal to versioned JSON (`schemaVersion`, `exportedAt`, `entries`) — all entries, not just the currently filtered view.
-*   **Validated Import**: Restoring parses defensively: malformed records are dropped, non-string tags filtered, missing identifiers regenerated, and any file yielding no usable entries is refused.
-*   **Non-Destructive Until Confirmed**: Nothing touches application state until you accept a confirmation showing incoming versus current entry counts, so a bad file cannot silently wipe a good library.
+*   **Full-Archive Export**: One click writes the entire journal to versioned JSON (`schemaVersion`, `exportedAt`, `entries`, `recentlyDeleted`, `consideredCards`) — all entries plus your trash and Consideration Library, not just the currently filtered view.
+*   **Validated Import**: Restoring parses defensively: malformed records are dropped, non-string tags filtered, missing identifiers regenerated, and any file yielding no usable entries is refused. Current schema is **v3**; v2 backups and legacy bare-array files still restore (missing sections default to empty).
+*   **Non-Destructive Until Confirmed**: Nothing touches application state until you accept an accessible confirmation dialog showing incoming versus current entry counts, so a bad file cannot silently wipe a good library.
 *   **Per-Entry Markdown**: Individual notes still export as `.md` from the editor for sharing outside the app.
+
+### 8. Accessibility
+*   **Keyboard Operable**: Card mentions, the Consideration Library, trash actions, the mobile drawer and both dialogs are reachable and operable without a mouse; `Escape` closes panels and dialogs.
+*   **Announced State**: Save state, filtered result counts, card-copy confirmation and card-loading progress are exposed as live regions.
+*   **Themed Dialogs**: Restore and validation feedback use an in-app `alertdialog` with focus management instead of native `alert`/`confirm`.
+*   **Responsive**: Layout follows `matchMedia` breakpoints rather than a one-shot `window.innerWidth` read, so panels respond to resize and rotation.
 
 ---
 

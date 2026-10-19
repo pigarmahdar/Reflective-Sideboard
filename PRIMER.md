@@ -106,6 +106,23 @@ Each time an empty entry is created, **6 prompts are randomised** from the follo
 * **Debounced Search Engine**: The sidebar filter search queries are debounced by **300ms** before calling Fuse.js. This ensures completely lag-free, butter-smooth typing even when you have hundreds of archived journal entries.
 * **Tag filtering**: Intersect entries by selecting one or more custom tags inside the collapsible sidebar.
 * **Responsive Layout**: Designed to render beautifully on mobile drawer panels and expansive desktop bento layouts alike.
+* **Consideration Library**: Sleeve a card from the preview inspector (hold the pointer on it for ~2s) and it joins a collapsible shelf in the sidebar. Click a shelf row to inspect it again, or remove it with the `×` button. Sleeved cards follow you into your JSON backups.
+
+---
+
+### 6. Card Inspector & Consideration Library
+
+* **Tactile Preview**: Cards tilt in 3D toward your pointer with a soft specular glare, then slide into an animated foil sleeve if you dwell on them.
+* **Live Card Data**: Art, mana cost, type line and Oracle text are fetched from Scryfall on demand, cached in memory, and race-guarded so flicking between mentions never shows a stale card.
+* **Copy & Link**: Copy the full card text to your clipboard or jump to the card's Scryfall page.
+
+---
+
+### 7. Privacy, Storage & Backups
+
+* **Browser-Local Only**: Your journal lives in your own browser (`localStorage`). Nothing is uploaded; there is no account and no server.
+* **The Trade-off**: Because the data never leaves your device, it also cannot follow you to another browser or survive clearing site data — so **Library Backup** in the sidebar is your safety net. It exports entries, trash and considered cards as versioned JSON (`schemaVersion: 3`), and restore accepts v3, v2 and legacy backups.
+* **Crash Recovery**: If rendering ever fails, an error screen offers a recovery action and an emergency backup download instead of a blank white page.
 
 ---
 
@@ -116,3 +133,4 @@ Each time an empty entry is created, **6 prompts are randomised** from the follo
 3. **Draft with Cards**: As you draft your thoughts, use `[[` or `@` to autocomplete card names.
 4. **Format Effortlessly**: Highlight your text and use `Cmd + B` or `Cmd + I` to instantly add Markdown bold/italic styling.
 5. **Review**: Switch views with `Cmd + P` or click the preview tab, click on any of your highlighted card tags, and view full art and card rulings instantly.
+6. **Keep It**: Click **Library Backup** in the sidebar whenever you have something worth keeping — your notes live in this browser only.

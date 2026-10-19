@@ -12,6 +12,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { JournalEditor } from './components/JournalEditor';
 import { UndoToast } from './components/UndoToast';
+import { Dialog } from './components/Dialog';
 import { JournalEntry, TrashItem, ConsideredCard, MTGCard } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, BookOpen, Menu } from 'lucide-react';
@@ -20,8 +21,14 @@ import Fuse from 'fuse.js';
 import { saveAs } from 'file-saver';
 import { useTheme } from './hooks/useTheme';
 import { journalStorage, JournalMigrationStatus, createDebouncedSaver, StorageSaveCoordinator } from './storage/journalStorage';
+import { createBackup, parseBackup } from './storage/backup';
 
-const BACKUP_SCHEMA_VERSION = 2;
+interface DialogState {
+  title: string;
+  body: string;
+  confirmLabel?: string;
+  onConfirm?: () => void;
+}
 
 // Deliberately outside the component so the notification reflects the actual
 // one-time load/migration outcome rather than changing on later renders.
@@ -65,6 +72,8 @@ export default function App() {
   // The entry just deleted, if any — drives the undo toast.
   const [lastDeleted, setLastDeleted] = useState<{ id: string; title: string } | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  // Replaces native alert/confirm, which are unstyled and unevenly announced.
+  const [dialog, setDialog] = useState<DialogState | null>(null);
   const isFirstRender = useRef(true);
 
   const entrySaver = useRef<StorageSaveCoordinator | null>(null);
@@ -293,19 +302,12 @@ export default function App() {
   };
 
   /**
-   * Export the full archive as a JSON file. `entries` is the live library
-   * (not the filtered view); the trash ships alongside it under its own
-   * `recentlyDeleted` key so nothing is silently dropped.
+   * Export the full archive as a JSON file. Everything the app persists ships
+   * in one payload — entries, trash, and the Consideration Library.
    */
   const handleBackup = () => {
     entrySaver.current?.flush();
-    const payload = {
-      schemaVersion: BACKUP_SCHEMA_VERSION,
-      exportedAt: new Date().toISOString(),
-      app: 'reflective-sideboard',
-      entries,
-      recentlyDeleted: trash,
-    };
+    const payload = createBackup(entries, trash, consideredCards);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const stamp = new Date().toISOString().slice(0, 10);
     saveAs(blob, `sideboard-backup-${stamp}.json`);
@@ -313,68 +315,56 @@ export default function App() {
 
   /**
    * Replace the archive from a previously exported backup.
-   * Validates shape before touching state so a bad file cannot wipe good data.
-   * Accepts a `recentlyDeleted` key (schema v2); older backups default to an
-   * empty trash.
+   * Validation lives in `parseBackup` so a bad file cannot wipe good data, and
+   * the shape is covered by unit tests. Accepts bare-array, v2 and v3 files.
    */
   const handleRestore = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
+      let restored: ReturnType<typeof parseBackup>;
       try {
-        const parsed = JSON.parse(String(reader.result));
-        const candidate = Array.isArray(parsed) ? parsed : parsed?.entries;
-        if (!Array.isArray(candidate)) {
-          alert('That file does not look like a Reflective Sideboard backup.');
-          return;
-        }
-        // Minimal per-record check: title/content/date are what the UI relies on.
-        const normaliseEntry = (e: any): JournalEntry => ({
-          id: typeof e.id === 'string' && e.id ? e.id : crypto.randomUUID(),
-          title: typeof e.title === 'string' ? e.title : '',
-          content: e.content,
-          date: typeof e.date === 'string' ? e.date : new Date().toISOString(),
-          lastModified: typeof e.lastModified === 'string' ? e.lastModified : new Date().toISOString(),
-          tags: Array.isArray(e.tags) ? e.tags.filter((t: unknown) => typeof t === 'string') : [],
-        });
-
-        const normalised: JournalEntry[] = candidate
-          .filter(e => e && typeof e === 'object' && typeof e.content === 'string')
-          .map(normaliseEntry);
-
-        if (normalised.length === 0) {
-          alert('No usable entries found in that backup.');
-          return;
-        }
-
-        // Trash is optional; older backups omit it entirely.
-        const candidateTrash = Array.isArray(parsed?.recentlyDeleted) ? parsed.recentlyDeleted : [];
-        const normalisedTrash: TrashItem[] = candidateTrash
-          .filter((t: any) => t && typeof t === 'object' && t.entry && typeof t.entry === 'object' && typeof t.entry.content === 'string')
-          .map((t: any) => ({
-            entry: normaliseEntry(t.entry),
-            deletedAt: typeof t.deletedAt === 'string' ? t.deletedAt : new Date().toISOString(),
-          }));
-
-        const ok = confirm(
-          `Restore ${normalised.length} ${normalised.length === 1 ? 'entry' : 'entries'}? ` +
-          `This replaces your current ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} and cannot be undone.`
-        );
-        if (!ok) return;
-
-        entrySaver.current?.cancel();
-        journalStorage.saveEntries(normalised);
-        journalStorage.saveTrash(normalisedTrash);
-        setEntries(normalised);
-        setTrash(normalisedTrash);
-        setLastDeleted(null);
-        setSelectedId(null);
-        setSearchQuery('');
-        setSelectedTags([]);
+        restored = parseBackup(JSON.parse(String(reader.result)));
       } catch {
-        alert('Could not read that file as JSON.');
+        restored = null;
       }
+      if (!restored) {
+        setDialog({
+          title: 'Could not read that backup',
+          body: 'That file does not look like a Reflective Sideboard backup, or it contains no usable entries. Your current library has not been changed.',
+        });
+        return;
+      }
+
+      const { entries: nextEntries, recentlyDeleted, consideredCards: nextConsidered } = restored;
+      const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+      setDialog({
+        title: 'Restore this backup?',
+        body:
+          `${plural(nextEntries.length, 'entry', 'entries')}, ` +
+          `${plural(recentlyDeleted.length, 'deleted entry', 'deleted entries')}, ` +
+          `and ${plural(nextConsidered.length, 'considered card', 'considered cards')}. ` +
+          `This replaces your current ${plural(entries.length, 'entry', 'entries')} and cannot be undone.`,
+        confirmLabel: 'Restore',
+        onConfirm: () => {
+          entrySaver.current?.cancel();
+          journalStorage.saveEntries(nextEntries);
+          journalStorage.saveTrash(recentlyDeleted);
+          journalStorage.saveConsideredCards(nextConsidered);
+          setEntries(nextEntries);
+          setTrash(recentlyDeleted);
+          setConsideredCards(nextConsidered);
+          setLastDeleted(null);
+          setSelectedId(null);
+          setSearchQuery('');
+          setSelectedTags([]);
+          setDialog(null);
+        },
+      });
     };
-    reader.onerror = () => alert('Could not read that file.');
+    reader.onerror = () => setDialog({
+      title: 'Could not read that file',
+      body: 'The backup could not be opened. Your current library has not been changed.',
+    });
     reader.readAsText(file);
   };
 
@@ -436,9 +426,12 @@ export default function App() {
               <div className="absolute top-6 left-6 md:hidden">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 border border-line bg-surface rounded-lg text-faint hover:text-ink"
+                  aria-label="Open sidebar"
+                  aria-expanded={isSidebarOpen}
+                  aria-controls="journal-sidebar"
+                  className="p-2 border border-line bg-surface rounded-lg text-faint hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                 >
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
               <div className="relative mb-8">
@@ -504,6 +497,16 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      {dialog && (
+        <Dialog
+          title={dialog.title}
+          body={dialog.body}
+          confirmLabel={dialog.confirmLabel}
+          onConfirm={dialog.onConfirm}
+          onCancel={() => setDialog(null)}
+        />
+      )}
     </div>
   );
 }
