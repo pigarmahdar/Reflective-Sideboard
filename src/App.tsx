@@ -13,6 +13,7 @@ import { Sidebar } from './components/Sidebar';
 import { JournalEditor } from './components/JournalEditor';
 import { UndoToast } from './components/UndoToast';
 import { Dialog } from './components/Dialog';
+import { BackupNudge } from './components/BackupNudge';
 import { JournalEntry, TrashItem, ConsideredCard, MTGCard } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, BookOpen, Menu } from 'lucide-react';
@@ -22,6 +23,7 @@ import { saveAs } from 'file-saver';
 import { useTheme } from './hooks/useTheme';
 import { journalStorage, JournalMigrationStatus, createDebouncedSaver, StorageSaveCoordinator } from './storage/journalStorage';
 import { createBackup, parseBackup } from './storage/backup';
+import { shouldShowBackupNudge, dismissBackupNudge, acknowledgeBackup } from './lib/backupNudge';
 
 interface DialogState {
   title: string;
@@ -74,6 +76,8 @@ export default function App() {
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   // Replaces native alert/confirm, which are unstyled and unevenly announced.
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  // Reminder that the journal has no server-side copy.
+  const [nudgeState, setNudgeState] = useState(() => journalStorage.loadBackupNudge());
   const isFirstRender = useRef(true);
 
   const entrySaver = useRef<StorageSaveCoordinator | null>(null);
@@ -216,6 +220,8 @@ export default function App() {
     entries.find(e => e.id === selectedId) || null,
   [entries, selectedId]);
 
+  const showBackupNudge = shouldShowBackupNudge(nudgeState, entries.length);
+
   // Keep the one-time storage load outcomes visible without changing this
   // notice on later saves. Prefer the entries migration result, then trash.
   const storageNotice = useMemo(
@@ -307,10 +313,20 @@ export default function App() {
    */
   const handleBackup = () => {
     entrySaver.current?.flush();
+    // Taking a backup retires the reminder permanently.
+    const nextNudge = acknowledgeBackup();
+    journalStorage.saveBackupNudge(nextNudge);
+    setNudgeState(nextNudge);
     const payload = createBackup(entries, trash, consideredCards);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const stamp = new Date().toISOString().slice(0, 10);
     saveAs(blob, `sideboard-backup-${stamp}.json`);
+  };
+
+  const handleDismissNudge = () => {
+    const nextNudge = dismissBackupNudge(entries.length);
+    journalStorage.saveBackupNudge(nextNudge);
+    setNudgeState(nextNudge);
   };
 
   /**
@@ -340,10 +356,12 @@ export default function App() {
       setDialog({
         title: 'Restore this backup?',
         body:
-          `${plural(nextEntries.length, 'entry', 'entries')}, ` +
+          `This backup contains ${plural(nextEntries.length, 'entry', 'entries')}, ` +
           `${plural(recentlyDeleted.length, 'deleted entry', 'deleted entries')}, ` +
           `and ${plural(nextConsidered.length, 'considered card', 'considered cards')}. ` +
-          `This replaces your current ${plural(entries.length, 'entry', 'entries')} and cannot be undone.`,
+          `Restoring replaces your current ${plural(entries.length, 'entry', 'entries')}` +
+          (entries.length > 0 ? ', which will be lost unless you export a backup first' : '') +
+          '. This cannot be undone.',
         confirmLabel: 'Restore',
         onConfirm: () => {
           entrySaver.current?.cancel();
@@ -451,6 +469,11 @@ export default function App() {
               <p className="max-w-xs text-muted leading-relaxed text-sm font-medium">
                 Log your matches, theorycraft your next brew, and track your card interactions with Scryfall integration.
               </p>
+              {/* First thing a new visitor needs to know: there is no server holding their notes. */}
+              <p className="mt-4 max-w-xs text-xs leading-relaxed text-faint">
+                Your journal lives in this browser only — no account, no upload.
+                Back it up any time from the sidebar.
+              </p>
               
               <button 
                 onClick={handleCreateEntry}
@@ -487,6 +510,18 @@ export default function App() {
 
       {/* Undo toast for soft-deleted entries — rendered outside the flex
           layout so it isn't clipped by the overflow-hidden containers. */}
+      {/* The undo toast and the backup nudge share the same corner, so stack
+          them rather than letting one cover the other. */}
+      <AnimatePresence>
+        {showBackupNudge && (
+          <BackupNudge
+            stackedAbove={Boolean(lastDeleted)}
+            onBackup={handleBackup}
+            onDismiss={handleDismissNudge}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {lastDeleted && (
           <UndoToast

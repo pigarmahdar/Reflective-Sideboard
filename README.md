@@ -122,6 +122,7 @@ Rather than displaying a stark blank canvas, Reflective Sideboard introduces a d
 *   **Validated Import**: Restoring parses defensively: malformed records are dropped, non-string tags filtered, missing identifiers regenerated, and any file yielding no usable entries is refused. Current schema is **v3**; v2 backups and legacy bare-array files still restore (missing sections default to empty).
 *   **Non-Destructive Until Confirmed**: Nothing touches application state until you accept an accessible confirmation dialog showing incoming versus current entry counts, so a bad file cannot silently wipe a good library.
 *   **Per-Entry Markdown**: Individual notes still export as `.md` from the editor for sharing outside the app.
+*   **First-Run & Backup Nudge**: The empty state explains that the journal is browser-local, and a dismissible reminder appears beside the save state after 3 entries if no backup has ever been taken. It re-arms every 10 further entries after dismissal and retires permanently once a backup is exported.
 
 ### 8. Accessibility
 *   **Keyboard Operable**: Card mentions, the Consideration Library, trash actions, the mobile drawer and both dialogs are reachable and operable without a mouse; `Escape` closes panels and dialogs.

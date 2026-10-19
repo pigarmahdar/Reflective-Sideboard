@@ -4,6 +4,8 @@
  */
 
 import type { JournalEntry, TrashItem, ConsideredCard } from '../types.ts';
+import { BACKUP_NUDGE_STORAGE_KEY, DEFAULT_BACKUP_NUDGE_STATE } from '../lib/backupNudge.ts';
+import type { BackupNudgeState } from '../lib/backupNudge.ts';
 
 export const LEGACY_ENTRIES_KEY = 'spellbook_journal_entries';
 export const CURRENT_ENTRIES_KEY = 'sideboard:v1:entries';
@@ -36,6 +38,8 @@ export interface JournalStorage {
   saveTrash(trash: TrashItem[]): boolean;
   loadConsideredCards(): StorageLoadResult<ConsideredCard[]>;
   saveConsideredCards(cards: ConsideredCard[]): boolean;
+  loadBackupNudge(): BackupNudgeState;
+  saveBackupNudge(state: BackupNudgeState): boolean;
 }
 
 export interface StorageSaveCoordinator {
@@ -302,5 +306,31 @@ export const journalStorage: JournalStorage = {
     const storage = getStorage();
     if (!storage) return false;
     return writeJson(storage, CONSIDERED_STORAGE_KEY, cards);
+  },
+
+  /**
+   * UI preference rather than user content, so there is no load status to
+   * report: a missing or malformed payload just means "never nudged yet".
+   */
+  loadBackupNudge(): BackupNudgeState {
+    const storage = getStorage();
+    if (!storage) return DEFAULT_BACKUP_NUDGE_STATE;
+
+    const raw = readJson(storage, BACKUP_NUDGE_STORAGE_KEY);
+    if (!isRecord(raw)) return DEFAULT_BACKUP_NUDGE_STATE;
+
+    return {
+      hasEverBackedUp: raw.hasEverBackedUp === true,
+      dismissedAtEntryCount:
+        typeof raw.dismissedAtEntryCount === 'number' && Number.isFinite(raw.dismissedAtEntryCount)
+          ? raw.dismissedAtEntryCount
+          : null,
+    };
+  },
+
+  saveBackupNudge(state: BackupNudgeState): boolean {
+    const storage = getStorage();
+    if (!storage) return false;
+    return writeJson(storage, BACKUP_NUDGE_STORAGE_KEY, state);
   },
 };

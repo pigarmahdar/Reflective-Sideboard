@@ -122,6 +122,8 @@ Each time an empty entry is created, **6 prompts are randomised** from the follo
 
 * **Browser-Local Only**: Your journal lives in your own browser (`localStorage`). Nothing is uploaded; there is no account and no server.
 * **The Trade-off**: Because the data never leaves your device, it also cannot follow you to another browser or survive clearing site data — so **Library Backup** in the sidebar is your safety net. It exports entries, trash and considered cards as versioned JSON (`schemaVersion: 3`), and restore accepts v3, v2 and legacy backups.
+* **First-Run Orientation**: The empty screen states plainly that your journal lives in this browser only, so "where are my notes?" is answered before a single word is written.
+* **Earned Backup Reminder**: Once you have 3 entries and have never exported, a quiet reminder appears beside the save state. Dismiss it and it stays away until 10 more entries arrive; take one backup and it never returns.
 * **Crash Recovery**: If rendering ever fails, an error screen offers a recovery action and an emergency backup download instead of a blank white page.
 
 ---

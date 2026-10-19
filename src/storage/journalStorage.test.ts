@@ -5,6 +5,7 @@ import {
   LEGACY_ENTRIES_KEY,
   journalStorage,
 } from './journalStorage.ts';
+import { BACKUP_NUDGE_STORAGE_KEY } from '../lib/backupNudge.ts';
 import type { JournalEntry } from '../types.ts';
 
 type MutableStorage = {
@@ -204,4 +205,21 @@ test('returns an empty library when browser storage is unavailable', () => {
 
   assert.equal(result.migrationStatus, 'storage-unavailable');
   assert.deepEqual(result.entries, []);
+});
+
+test('backup nudge state round-trips and tolerates malformed payloads', () => {
+  const data = new Map<string, string>();
+  installStorage({ data });
+
+  // Never nudged yet: defaults, not a crash.
+  assert.deepEqual(journalStorage.loadBackupNudge(), { hasEverBackedUp: false, dismissedAtEntryCount: null });
+
+  assert.equal(journalStorage.saveBackupNudge({ hasEverBackedUp: false, dismissedAtEntryCount: 5 }), true);
+  assert.deepEqual(journalStorage.loadBackupNudge(), { hasEverBackedUp: false, dismissedAtEntryCount: 5 });
+
+  data.set(BACKUP_NUDGE_STORAGE_KEY, '{"hasEverBackedUp":"yes","dismissedAtEntryCount":"nope"}');
+  assert.deepEqual(journalStorage.loadBackupNudge(), { hasEverBackedUp: false, dismissedAtEntryCount: null });
+
+  data.set(BACKUP_NUDGE_STORAGE_KEY, 'not json');
+  assert.deepEqual(journalStorage.loadBackupNudge(), { hasEverBackedUp: false, dismissedAtEntryCount: null });
 });
